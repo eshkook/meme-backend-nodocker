@@ -24,7 +24,7 @@ SECRET_KEY = os.environ.get('SECRET_KEY')
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['https://v9m2jp3tgz.eu-west-1.awsapprunner.com/'] 
+ALLOWED_HOSTS = ['v9m2jp3tgz.eu-west-1.awsapprunner.com']
 
 # Application definition
 
