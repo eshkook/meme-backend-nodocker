@@ -1,19 +1,38 @@
-# instructions on how to run the app
+# Base image
+FROM python:3.8-slim-buster
+# FROM python:3.8 # for non-binary psycopg2
 
-# the chosen base image
-FROM python:3.8-slim-buster 
+# Set environment variables for Python and ensure output is sent straight to the terminal
+ENV PYTHONUNBUFFERED=1
 
-# sets the working directory in the container
-WORKDIR /app
+# Set the working directory in the container
+WORKDIR /django
 
-# copying the requirements file of this django app into the container app 
-COPY requirements.txt requirements.txt 
+# Install system dependencies for psycopg2 and any other necessary packages
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+    libpq-dev \
+    gcc && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
 
-# installing Python dependencies in the container
-RUN pip3 install -r requirements.txt
+# Copy requirements and install Python dependencies
+COPY requirements.txt requirements.txt
+# RUN pip3 install --no-cache-dir -r requirements.txt
+RUN pip3 install --verbose --no-cache-dir -r requirements.txt
 
-# copying the entire folder of this django app into the container app (why did we copied earlier the requirements separately)
+# for psycopg2 (non-binary):
+# Optionally, remove unnecessary build packages to keep the image smaller
+# This will remove the gcc compiler and libpq-dev, which are not required after psycopg2 is built
+# RUN apt-get purge -y \
+#     libpq-dev \
+#     gcc && \
+#     apt-get autoremove -y && \
+#     apt-get clean
+
+# Copy the rest of the application code into the container
 COPY . .
 
-# the running command. the is meant to make the machine able to access the container
-CMD ["python3", "manage.py", "runserver", "0.0.0.0:8000"]
+# Remaining Dockerfile commands, like the CMD or ENTRYPOINT to start your application, can be added here
+# For example, if you use gunicorn as a WSGI server, you can have:
+CMD ["gunicorn", "memebackend.wsgi:application", "--bind", "0.0.0.0:8000"]

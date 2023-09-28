@@ -1,4 +1,8 @@
-docker build --tag python-django .
-docker run --publish 8000:8000 python-django
+1. build the image:
+docker-compose build
 
-docker exec -it container_name(?) /bin/bash
+2. running the container:
+docker-compose up
+
+3. connecting to the container's terminal
+docker exec -it django_container /bin/bash

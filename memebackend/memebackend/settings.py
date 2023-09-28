@@ -1,20 +1,30 @@
 from pathlib import Path
+import os
+
+# ????????????????????????????????????????? consider adding Django's Logging Setting
+
+# environment variables:
+# SECRET_KEY
+# RDS_DB_NAME
+# RDS_USERNAME
+# RDS_PASSWORD
+# RDS_HOSTNAME
+# RDS_PORT
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
-
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/4.0/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-%e%yh-0s_!&aq=-^@&pqld#bd1r4jmct5e0@jhg$ck@5wdj-5$'
+# SECRET_KEY = 'django-insecure-%e%yh-0s_!&aq=-^@&pqld#bd1r4jmct5e0@jhg$ck@5wdj-5$'
+SECRET_KEY = os.environ.get('SECRET_KEY')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = False
 
-ALLOWED_HOSTS = []
-
+ALLOWED_HOSTS = [] # ?????????????????????????????????????????????????????? put here the app runner url
 
 # Application definition
 
@@ -71,12 +81,35 @@ WSGI_APPLICATION = 'memebackend.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/4.0/ref/settings/#databases
 
+
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': os.environ.get('RDS_DB_NAME'),
+        'USER': os.environ.get('RDS_USERNAME'),
+        'PASSWORD': os.environ.get('RDS_PASSWORD'),
+        'HOST': os.environ.get('RDS_HOSTNAME'),
+        'PORT': os.environ.get('RDS_PORT'),
     }
 }
+
+# Static and Media Files: ??????????????????????????????????????????????????????????????? do i need it? like s
+# AWS_STORAGE_BUCKET_NAME = 'your_s3_bucket_name'
+# AWS_S3_CUSTOM_DOMAIN = '%s.s3.amazonaws.com' % AWS_STORAGE_BUCKET_NAME
+# AWS_DEFAULT_ACL = 'public-read'
+# STATIC_URL = 'https://%s/' % AWS_S3_CUSTOM_DOMAIN
+# STATICFILES_STORAGE = 'storages.backends.s3boto3.S3Boto3Storage'
+# DEFAULT_FILE_STORAGE = 'storages.backends.s3boto3.S3Boto3Storage'
+# MEDIA_URL = 'https://%s/media/' % AWS_S3_CUSTOM_DOMAIN
+# Ensure you've added boto3 and django-storages to your requirements.txt for S3 integration.
+
+# Security Settings: ?????????????????????????????????????????????????????????????????????? is it correct
+SECURE_SSL_REDIRECT = True
+SESSION_COOKIE_SECURE = True
+CSRF_COOKIE_SECURE = True
+SECURE_BROWSER_XSS_FILTER = True
+X_FRAME_OPTIONS = 'DENY'
+
 
 
 # Password validation
@@ -124,6 +157,6 @@ STATICFILES_DIRS = [
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-CORS_ALLOW_ALL_ORIGINS = True
-# CORS_ALLOWED_ORIGINS = [] # specify allowed urls
+# CORS_ALLOW_ALL_ORIGINS = True
+CORS_ALLOWED_ORIGINS = ['https://main.d1lf2gevc7dmgj.amplifyapp.com/'] # specify allowed urls
 # CORS_ALLOWED_ORIGIN_REGEXES = [] # specify allowed urls with regex
