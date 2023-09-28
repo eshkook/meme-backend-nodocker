@@ -1,8 +1,0 @@
-1. build the image:
-docker-compose build
-
-2. running the container:
-docker-compose up
-
-3. connecting to the container's terminal
-docker exec -it django_container /bin/bash
