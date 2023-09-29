@@ -85,11 +85,11 @@ WSGI_APPLICATION = 'memebackend.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': os.environ.get('RDS_DB_NAME'),
-        'USER': os.environ.get('RDS_USERNAME'),
-        'PASSWORD': os.environ.get('RDS_PASSWORD'),
-        'HOST': os.environ.get('RDS_HOSTNAME'),
-        'PORT': os.environ.get('RDS_PORT'),
+        'NAME': 'postgres', # os.environ.get('RDS_DB_NAME'),
+        'USER': 'postgres', # os.environ.get('RDS_USERNAME'),
+        'PASSWORD': 'kkOOK61610216', # os.environ.get('RDS_PASSWORD'),
+        'HOST': 'database-1.ceor0cxiqb2n.eu-west-1.rds.amazonaws.com', # os.environ.get('RDS_HOSTNAME'),
+        'PORT': 5432 # os.environ.get('RDS_PORT'),
     }
 }
 
@@ -159,5 +159,5 @@ STATICFILES_DIRS = [
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 # CORS_ALLOW_ALL_ORIGINS = True
-CORS_ALLOWED_ORIGINS = ['https://main.d1lf2gevc7dmgj.amplifyapp.com/'] # specify allowed urls
+CORS_ALLOWED_ORIGINS = ['https://main.d1lf2gevc7dmgj.amplifyapp.com'] # specify allowed urls
 # CORS_ALLOWED_ORIGIN_REGEXES = [] # specify allowed urls with regex
