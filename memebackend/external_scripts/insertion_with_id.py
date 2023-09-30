@@ -14,7 +14,7 @@ db_params = {
     'dbname': 'postgres',
     'user': 'postgres',
     'password': 'kkOOK61610216',
-    'host': 'database-1.ceor0cxiqb2n.eu-west-1.rds.amazonaws.com',
+    'host': 'database-2.ceor0cxiqb2n.eu-west-1.rds.amazonaws.com',
     'port': '5432'
 }
 

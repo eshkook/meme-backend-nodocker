@@ -88,7 +88,7 @@ DATABASES = {
         'NAME': 'postgres', # os.environ.get('RDS_DB_NAME'),
         'USER': 'postgres', # os.environ.get('RDS_USERNAME'),
         'PASSWORD': 'kkOOK61610216', # os.environ.get('RDS_PASSWORD'),
-        'HOST': 'database-1.ceor0cxiqb2n.eu-west-1.rds.amazonaws.com', # os.environ.get('RDS_HOSTNAME'),
+        'HOST': 'database-2.ceor0cxiqb2n.eu-west-1.rds.amazonaws.com', # os.environ.get('RDS_HOSTNAME'),
         'PORT': 5432 # os.environ.get('RDS_PORT'),
     }
 }
