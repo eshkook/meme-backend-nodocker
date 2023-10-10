@@ -38,6 +38,6 @@ def getImage(request):
 
 
 @api_view(['GET'])
-def getImage(request):
+def getPosts(request):
 
     return Response(posts_dict)    

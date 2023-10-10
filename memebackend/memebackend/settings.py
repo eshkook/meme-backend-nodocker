@@ -18,13 +18,23 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/4.0/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-# SECRET_KEY = 'django-insecure-%e%yh-0s_!&aq=-^@&pqld#bd1r4jmct5e0@jhg$ck@5wdj-5$'
-SECRET_KEY = os.environ.get('SECRET_KEY')
+SECRET_KEY = 'django-insecure-%e%yh-0s_!&aq=-^@&pqld#bd1r4jmct5e0@jhg$ck@5wdj-5$'
+# SECRET_KEY = os.environ.get('SECRET_KEY')
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['v9m2jp3tgz.eu-west-1.awsapprunner.com']
+ALLOWED_HOSTS = [
+    'v9m2jp3tgz.eu-west-1.awsapprunner.com',
+    'http://localhost:3000',  
+    'http://127.0.0.1:3000', 
+    'http://localhost:3001',  
+    'http://127.0.0.1:3001',
+    'http://localhost:8000',
+    'http://127.0.0.1:8000',
+    'http://127.0.0.1'
+    ]
+
 
 # Application definition
 
@@ -92,7 +102,6 @@ DATABASES = {
         'PORT': 5432 # os.environ.get('RDS_PORT'),
     }
 }
-
 # Static and Media Files: ??????????????????????????????????????????????????????????????? do i need it? like s
 # AWS_STORAGE_BUCKET_NAME = 'your_s3_bucket_name'
 # AWS_S3_CUSTOM_DOMAIN = '%s.s3.amazonaws.com' % AWS_STORAGE_BUCKET_NAME
@@ -104,7 +113,7 @@ DATABASES = {
 # Ensure you've added boto3 and django-storages to your requirements.txt for S3 integration.
 
 # Security Settings: ?????????????????????????????????????????????????????????????????????? is it correct
-SECURE_SSL_REDIRECT = True
+SECURE_SSL_REDIRECT = False ############################ change to True in production
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 SESSION_COOKIE_SECURE = True
 CSRF_COOKIE_SECURE = True
@@ -159,13 +168,26 @@ STATICFILES_DIRS = [
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 # CORS_ALLOW_ALL_ORIGINS = True
-CORS_ALLOWED_ORIGINS = ['https://main.d1j24jpipbs08c.amplifyapp.com/'] # specify allowed urls
+# CORS_ALLOWED_ORIGINS = [
+#     'https://main.d1j24jpipbs08c.amplifyapp.com',
+#     'http://localhost:3000',  
+#     'http://127.0.0.1:3000', 
+#     'http://localhost:3001',  
+#     'http://127.0.0.1:3001',
+#     'http://localhost:8000',
+#     'http://127.0.0.1:8000',
+#     'http://127.0.0.1'
+# ]
+
 CORS_ALLOWED_ORIGINS = [
-    'https://main.d1j24jpipbs08c.amplifyapp.com/',
-    'http://localhost:3000',  
-    'http://127.0.0.1:3000', 
-    'http://localhost:3001',  
-    'http://127.0.0.1:3001',  
+    'http://main.d1j24jpipbs08c.amplifyapp.com',
+    'http://localhost:3000',
+    'http://127.0.0.1:3000',
+    'http://localhost:3001',
+    'http://127.0.0.1:3001',
+    'http://localhost:8000',
+    'http://127.0.0.1:8000',
+    'http://127.0.0.1',
 ]
 
 # CORS_ALLOWED_ORIGIN_REGEXES = [] # specify allowed urls with regex
