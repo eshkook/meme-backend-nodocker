@@ -6,6 +6,11 @@ import random
 import os
 from django.conf import settings
 
+# Load data.json once when the module is imported
+filename = os.path.join(settings.BASE_DIR, 'base', 'api', 'data.json')
+with open(filename, 'r') as file:
+    memes_list_of_dicts = json.load(file)
+
 @api_view(['GET']) # the request types that can access this endoint
 def getRoutes(request): # this endpoint elaborates what endpoints there are
     routes = [
@@ -16,13 +21,15 @@ def getRoutes(request): # this endpoint elaborates what endpoints there are
 
 @api_view(['GET'])
 def getImage(request):
-    filename = os.path.join(settings.BASE_DIR, 'base', 'api', 'data.json')
+    # filename = os.path.join(settings.BASE_DIR, 'base', 'api', 'data.json')
 
-    with open(filename, 'r') as file:
-        memes_list_of_dicts = json.load(file)
+    # with open(filename, 'r') as file:
+    #     memes_list_of_dicts = json.load(file)
+
+    # random_meme = random.choice(memes_list_of_dicts)['url']
 
     random_meme = random.choice(memes_list_of_dicts)['url']
-    
+
     return Response(random_meme)                               
 
 
