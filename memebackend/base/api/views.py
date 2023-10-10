@@ -11,6 +11,10 @@ filename = os.path.join(settings.BASE_DIR, 'base', 'api', 'data.json')
 with open(filename, 'r') as file:
     memes_list_of_dicts = json.load(file)
 
+filename = os.path.join(settings.BASE_DIR, 'base', 'api', 'posts.json')
+with open(filename, 'r') as file:
+    posts_dict = json.load(file)    
+
 @api_view(['GET']) # the request types that can access this endoint
 def getRoutes(request): # this endpoint elaborates what endpoints there are
     routes = [
@@ -33,3 +37,7 @@ def getImage(request):
     return Response(random_meme)                               
 
 
+@api_view(['GET'])
+def getImage(request):
+
+    return Response(posts_dict)    
