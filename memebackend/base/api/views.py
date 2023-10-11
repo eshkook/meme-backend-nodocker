@@ -6,7 +6,7 @@ import random
 import os
 from django.conf import settings
 
-from rest_framework.decorators import api_view, parser_classes
+from rest_framework.decorators import parser_classes
 from rest_framework.parsers import JSONParser
 from rest_framework import status
 
