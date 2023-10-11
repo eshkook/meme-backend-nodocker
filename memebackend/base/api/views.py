@@ -29,7 +29,11 @@ with open(filename, 'r') as file:
 def getRoutes(request): # this endpoint elaborates what endpoints there are
     routes = [
         'GET /api', # current endpoint
-        'GET /api/image', 
+        'GET /api/image',
+        'GET /api/posts',  
+        'GET /api/posts/:id',
+        'GET /api/users',  
+        'GET /api/users/:id',
     ]
     return Response(routes)
 
