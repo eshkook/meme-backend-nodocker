@@ -1,14 +1,14 @@
 [
     {
         "id": "1",
-        "url": "Post 1"
+        "title": "Post 1"
     },
     {
         "id": "2",
-        "url": "Post 2"
+        "title": "Post 2"
     },
     {
         "id": "3",
-        "url": "Post 3"
+        "title": "Post 3"
     }
 ]
