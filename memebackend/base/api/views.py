@@ -48,13 +48,16 @@ def getImage(request):
 
 @api_view(['GET'])
 def getPost(request, pk):
-
     filename = os.path.join(settings.BASE_DIR, 'base', 'api', 'posts.json')
     with open(filename, 'r') as file:
         posts_list_of_dicts = json.load(file)
-
+    
     post_dict = find_dict_by_key_value(posts_list_of_dicts, "id", pk)
-    return (Response(post_dict) if post_dict else Response("no such post"))
+    if post_dict:
+        return Response(post_dict)
+    else:
+        return Response({"detail": "no such post"}, status=404)
+
 
 class PostsView(APIView):
     def get(self, request):
@@ -105,5 +108,9 @@ def getUsers(request):
 
 @api_view(['GET'])
 def getUser(request, pk):
+    
     user_dict = find_dict_by_key_value(users_list_of_dicts, "id", pk)
-    return (Response(user_dict) if user_dict else Response("no such user"))
+    if user_dict:
+        return Response(user_dict)
+    else:
+        return Response({"detail": "no such user"}, status=404)
