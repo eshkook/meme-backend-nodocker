@@ -46,8 +46,25 @@ def getImage(request):
 
     return Response(random_meme)                               
 
+# @api_view(['GET'])
+# def getPost(request, pk):
+#     filename = os.path.join(settings.BASE_DIR, 'base', 'api', 'posts.json')
+#     with open(filename, 'r') as file:
+#         posts_list_of_dicts = json.load(file)
+    
+#     post_dict = find_dict_by_key_value(posts_list_of_dicts, "id", pk)
+#     if post_dict:
+#         return Response(post_dict)
+#     else:
+#         return Response({"detail": "no such post"}, status=404)
+
 @api_view(['GET'])
 def getPost(request, pk):
+    try:
+        pk = int(pk)  # Ensure pk is an integer
+    except ValueError:
+        return Response({"detail": "Invalid post ID"}, status=400)  # Return a 400 Bad Request error if pk is not a valid integer
+
     filename = os.path.join(settings.BASE_DIR, 'base', 'api', 'posts.json')
     with open(filename, 'r') as file:
         posts_list_of_dicts = json.load(file)
@@ -57,6 +74,7 @@ def getPost(request, pk):
         return Response(post_dict)
     else:
         return Response({"detail": "no such post"}, status=404)
+
 
 
 class PostsView(APIView):
