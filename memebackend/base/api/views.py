@@ -133,7 +133,8 @@ class PostsView(APIView):
 
         # Generate a new post id
         existing_ids = [int(post['id']) for post in posts_list_of_dicts]
-        generated_id = str(max(existing_ids) + 1) if existing_ids else '1'
+        # generated_id = str(max(existing_ids) + 1) if existing_ids else '1'
+        generated_id = max(existing_ids) + 1 if existing_ids else 1
 
         # Construct the new post object
         new_post = {
