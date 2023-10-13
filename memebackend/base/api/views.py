@@ -67,7 +67,7 @@ class PostsView(APIView):
             posts_list_of_dicts = json.load(file)
 
         return Response(posts_list_of_dicts)
-
+    
     def post(self, request):
 
         new_post = request.data  # Get data from POST request
@@ -97,14 +97,13 @@ class PostsView(APIView):
         if not title and not body:
             return Response({'error': 'Both title and body cannot be missing or empty'}, status=status.HTTP_400_BAD_REQUEST)
 
-        # Handle missing id
+        # Generate a new post id
         existing_ids = [int(post['id']) for post in posts_list_of_dicts]
         generated_id = str(max(existing_ids) + 1) if existing_ids else '1'
-        post_id = new_post.get('id', generated_id)
 
         # Construct the new post object
         new_post = {
-            'id': post_id,
+            'id': generated_id,
             'title': title,
             'body': body,
             'userId': userId  # Include userId in the new post object
@@ -116,6 +115,55 @@ class PostsView(APIView):
             json.dump(posts_list_of_dicts, file, indent=4)  # Write updated data back to file
 
         return Response(new_post, status=status.HTTP_201_CREATED)  # Return new post with 201 Created status
+
+    # def post(self, request):
+
+    #     new_post = request.data  # Get data from POST request
+
+    #     # Validate userId
+    #     userId = new_post.get('userId')
+    #     if userId is None:
+    #         return Response({'error': 'userId is missing'}, status=status.HTTP_400_BAD_REQUEST)
+        
+    #     try:
+    #         userId = int(userId)  # Ensure userId is an integer
+    #     except ValueError:
+    #         return Response({'error': 'userId must be an integer'}, status=status.HTTP_400_BAD_REQUEST)
+
+    #     # Check if userId exists
+    #     user_exists = find_dict_by_key_value(users_list_of_dicts, 'id', userId)
+    #     if not user_exists:
+    #         return Response({'error': 'No such user'}, status=status.HTTP_400_BAD_REQUEST)
+
+    #     filename = os.path.join(settings.BASE_DIR, 'base', 'api', 'posts.json')
+    #     with open(filename, 'r') as file:  # Open file in read mode to get existing posts
+    #         posts_list_of_dicts = json.load(file)
+
+    #     # Handle missing/empty title and body
+    #     title = new_post.get('title', '')
+    #     body = new_post.get('body', '')
+    #     if not title and not body:
+    #         return Response({'error': 'Both title and body cannot be missing or empty'}, status=status.HTTP_400_BAD_REQUEST)
+
+    #     # Handle missing id
+    #     existing_ids = [int(post['id']) for post in posts_list_of_dicts]
+    #     generated_id = str(max(existing_ids) + 1) if existing_ids else '1'
+    #     post_id = new_post.get('id', generated_id)
+
+    #     # Construct the new post object
+    #     new_post = {
+    #         'id': post_id,
+    #         'title': title,
+    #         'body': body,
+    #         'userId': userId  # Include userId in the new post object
+    #     }
+
+    #     # Append the new post to the list and update the file
+    #     posts_list_of_dicts.append(new_post)
+    #     with open(filename, 'w') as file:  # Open file in write mode to update posts
+    #         json.dump(posts_list_of_dicts, file, indent=4)  # Write updated data back to file
+
+    #     return Response(new_post, status=status.HTTP_201_CREATED)  # Return new post with 201 Created status
         
         # new_post = request.data  # Get data from POST request
 
