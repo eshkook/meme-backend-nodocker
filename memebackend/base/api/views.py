@@ -46,18 +46,6 @@ def getImage(request):
 
     return Response(random_meme)                               
 
-# @api_view(['GET'])
-# def getPost(request, pk):
-#     filename = os.path.join(settings.BASE_DIR, 'base', 'api', 'posts.json')
-#     with open(filename, 'r') as file:
-#         posts_list_of_dicts = json.load(file)
-    
-#     post_dict = find_dict_by_key_value(posts_list_of_dicts, "id", pk)
-#     if post_dict:
-#         return Response(post_dict)
-#     else:
-#         return Response({"detail": "no such post"}, status=404)
-
 @api_view(['GET'])
 def getPost(request, pk):
     try:
@@ -172,6 +160,10 @@ def getUsers(request):
 
 @api_view(['GET'])
 def getUser(request, pk):
+    try:
+        pk = int(pk)  # Convert pk to integer
+    except ValueError:
+        return Response({"detail": "Invalid user ID"}, status=400)  # Return 400 Bad Request for invalid IDs
     
     user_dict = find_dict_by_key_value(users_list_of_dicts, "id", pk)
     if user_dict:
