@@ -63,8 +63,6 @@ def getPost(request, pk):
     else:
         return Response({"detail": "no such post"}, status=404)
 
-
-
 class PostsView(APIView):
     def get(self, request):
         
@@ -73,35 +71,7 @@ class PostsView(APIView):
             posts_list_of_dicts = json.load(file)
 
         return Response(posts_list_of_dicts)
-    
-    # def post(self, request):
-
-    #     # Fixed post data
-    #     new_post = {
-    #         "id": "21",
-    #         "userId": "1",
-    #         "title": "Title 21",
-    #         "body": "Body 21"
-    #     }
-
-    #     # File path to the posts.json file
-    #     filename = os.path.join(settings.BASE_DIR, 'base', 'api', 'posts.json')
-
-    #     # Reading existing posts
-    #     with open(filename, 'r') as file:
-    #         posts_list_of_dicts = json.load(file)
-
-    #     # Append the new post to the list of existing posts
-    #     posts_list_of_dicts.append(new_post)
-
-    #     # Writing updated posts list back to file
-    #     with open(filename, 'w') as file:
-    #         json.dump(posts_list_of_dicts, file, indent=4)  
-
-    #     # Return new post with 201 Created status
-    #     return Response(new_post, status=status.HTTP_201_CREATED)
-
-    
+     
     def post(self, request):
 
         new_post = request.data  # Get data from POST request
@@ -150,9 +120,6 @@ class PostsView(APIView):
             json.dump(posts_list_of_dicts, file, indent=4)  # Write updated data back to file
 
         return Response(new_post, status=status.HTTP_201_CREATED)  # Return new post with 201 Created status
-
-    
-
 
 @api_view(['GET'])
 def getUsers(request):
