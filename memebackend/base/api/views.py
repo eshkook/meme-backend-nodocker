@@ -12,6 +12,8 @@ from rest_framework import status
 
 from rest_framework.views import APIView
 
+from rest_framework.pagination import PageNumberPagination
+
 def find_dict_by_key_value(dict_list, target_key, target_value):
     for dictionary in dict_list:
         if dictionary.get(target_key) == target_value:
@@ -64,13 +66,39 @@ def getPost(request, pk):
         return Response({"detail": "no such post"}, status=404)
 
 class PostsView(APIView):
-    def get(self, request):
+    # def get(self, request):
         
+    #     filename = os.path.join(settings.BASE_DIR, 'base', 'api', 'posts.json')
+    #     with open(filename, 'r') as file:
+    #         posts_list_of_dicts = json.load(file)
+
+    #     return Response(posts_list_of_dicts)
+
+    def get(self, request):
         filename = os.path.join(settings.BASE_DIR, 'base', 'api', 'posts.json')
         with open(filename, 'r') as file:
             posts_list_of_dicts = json.load(file)
-
-        return Response(posts_list_of_dicts)
+        
+        # Get page number from query params, or default to 1
+        page = request.query_params.get('_page', 1)
+        # Get limit from query params, or default to 2
+        limit = request.query_params.get('_limit', 2)
+        
+        paginator = PageNumberPagination()
+        paginator.page_size = limit  # Set the number of items per page
+        paginated_posts = paginator.paginate_queryset(posts_list_of_dicts, request)
+        
+        # Determine if there are next/previous pages
+        has_next = paginated_posts.has_next()
+        has_previous = paginated_posts.has_previous()
+        
+        response_data = {
+            'nextPage': page + 1 if has_next else None,
+            'previousPage': page - 1 if has_previous else None,
+            'posts': paginated_posts.object_list  # List of posts on the current page
+        }
+        
+        return Response(response_data)
      
     def post(self, request):
 
