@@ -29,10 +29,17 @@ filename = os.path.join(settings.BASE_DIR, 'base', 'api', 'users.json')
 with open(filename, 'r') as file:
     users_list_of_dicts = json.load(file)  
 
-# Define a custom paginator class
 class CustomPagination(PageNumberPagination):
     page_size = 2  # Set a default page size
-    page_size_query_param = '_limit'  # Allow the client to override the page size with a query parameter         
+    page_size_query_param = '_limit'  # Allow the client to override the page size with a query parameter
+
+    def get_paginated_response(self, data):
+        return Response({
+            'nextPage': self.get_next_link(),
+            'previousPage': self.get_previous_link(),
+            'posts': data  # Ensure this key contains the array of paginated posts
+        })
+       
 
 @api_view(['GET']) # the request types that can access this endoint
 def getRoutes(request): # this endpoint elaborates what endpoints there are
