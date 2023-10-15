@@ -27,7 +27,12 @@ with open(filename, 'r') as file:
 
 filename = os.path.join(settings.BASE_DIR, 'base', 'api', 'users.json')
 with open(filename, 'r') as file:
-    users_list_of_dicts = json.load(file)       
+    users_list_of_dicts = json.load(file)  
+
+# Define a custom paginator class
+class CustomPagination(PageNumberPagination):
+    page_size = 2  # Set a default page size
+    page_size_query_param = '_limit'  # Allow the client to override the page size with a query parameter         
 
 @api_view(['GET']) # the request types that can access this endoint
 def getRoutes(request): # this endpoint elaborates what endpoints there are
@@ -78,27 +83,25 @@ class PostsView(APIView):
         filename = os.path.join(settings.BASE_DIR, 'base', 'api', 'posts.json')
         with open(filename, 'r') as file:
             posts_list_of_dicts = json.load(file)
-        
-        # Get page number from query params, or default to 1
-        page = request.query_params.get('_page', 1)
-        # Get limit from query params, or default to 2
-        limit = request.query_params.get('_limit', 2)
-        
-        paginator = PageNumberPagination()
-        paginator.page_size = limit  # Set the number of items per page
-        paginated_posts = paginator.paginate_queryset(posts_list_of_dicts, request)
-        
-        # Determine if there are next/previous pages
-        has_next = paginated_posts.has_next()
-        has_previous = paginated_posts.has_previous()
-        
-        response_data = {
-            'nextPage': page + 1 if has_next else None,
-            'previousPage': page - 1 if has_previous else None,
-            'posts': paginated_posts.object_list  # List of posts on the current page
-        }
-        
-        return Response(response_data)
+
+        # Check for pagination parameters
+        page_param = request.query_params.get('_page')
+        limit_param = request.query_params.get('_limit')
+        sort_param = request.query_params.get('_sort')
+
+        if page_param and limit_param:
+            paginator = CustomPagination()
+            paginator.page_size = int(limit_param)  # Override the page size if _limit is provided
+            paginated_posts = paginator.paginate_queryset(posts_list_of_dicts, request)
+            # Optionally sort the paginated posts if _sort is provided
+            if sort_param:
+                paginated_posts = sorted(paginated_posts, key=lambda x: x.get(sort_param))
+            return paginator.get_paginated_response(paginated_posts)
+        else:
+            # Optionally sort all posts if _sort is provided
+            if sort_param:
+                posts_list_of_dicts = sorted(posts_list_of_dicts, key=lambda x: x.get(sort_param))
+            return Response(posts_list_of_dicts)
      
     def post(self, request):
 
