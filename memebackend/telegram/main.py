@@ -18,20 +18,12 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def custom_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(' It is a custom command. Quiet')     
 
-# responses handling       
-
-# def handle_response(text: str) -> str:
-#     words_amount = len(text.split())
-#     return f"You wrote {words_amount} words"
-
-########################################################################################################################
-def handle_response(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    text: str = update.message.text
+async def handle_response(update: Update, context: ContextTypes.DEFAULT_TYPE, text: str) -> None:
     words_amount = len(text.split())
 
     if words_amount < 5:
         response = f"You wrote {words_amount} words"
-        update.message.reply_text(response)
+        await update.message.reply_text(response)
     else:
         keyboard = [
             [InlineKeyboardButton("because I am bored", callback_data='bored')],
@@ -39,33 +31,39 @@ def handle_response(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
             [InlineKeyboardButton("because I am bad", callback_data='bad')]
         ]
         reply_markup = InlineKeyboardMarkup(keyboard)
-        update.message.reply_text('Why do you speak too much?', reply_markup=reply_markup)
+        await update.message.reply_text('Why do you speak too much?', reply_markup=reply_markup)
 
-
-def handle_choice(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+async def handle_choice(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     query = update.callback_query
     choice = query.data  # This will be 'bored', 'afraid', or 'bad'
-    query.edit_message_text(f"You chose: {choice}")
-########################################################################################################################3
 
-# message handling
+    # Define the pre-defined responses
+    responses = {
+        'bored': "It sounds like you need some excitement in your life.",
+        'afraid': "Don't worry, I'm here to help!",
+        'bad': "Oh no! Hopefully, things will turn around soon."
+    }
+
+    # Get the response based on the user's choice
+    response = responses.get(choice, "Invalid choice")
+
+    # Send the pre-defined response
+    await query.message.reply_text(response)  
+       
 async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    message_type: str = update.message.chat.type # either private or group chat
-    text: str = update.message.text # the text that the user wrote
+    message_type: str = update.message.chat.type  # either private or group chat
+    text: str = update.message.text  # the text that the user wrote
 
     print(f"User {update.message.chat.id} in {message_type}: '{text}'")
 
     if message_type == "group":
-        if BOT_USERNAME in text: # check if you should even response, if they talked to you
+        if BOT_USERNAME in text:  # check if you should even response, if they talked to you
             new_text: str = text.replace(BOT_USERNAME, '').strip()
-            response: str = handle_response(new_text)
+            await handle_response(update, context, new_text)  # added await here
         else:
             return
     else:
-        response: str = handle_response(text)  
-
-    print('Bot', response)
-    await update.message.reply_text(response)          
+        await handle_response(update, context, text)  # added await here
 
 # error handling
 async def error(update: Update, context: ContextTypes.DEFAULT_TYPE):
