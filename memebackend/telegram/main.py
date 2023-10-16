@@ -39,7 +39,7 @@ async def handle_choice(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
 
     # Define the pre-defined responses
     responses = {
-        'bored': "Bored? You It sounds like you need some excitement in your life.",
+        'bored': "Bored? It sounds like you need some excitement in your life.",
         'afraid': "Afraid? Don't worry, I'm here to help!",
         'bad': "Bad? Oh no! Hopefully, things will turn around soon."
     }
@@ -50,8 +50,19 @@ async def handle_choice(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
     # Send the pre-defined response
     await query.message.reply_text(response)
 
-    # Remove the inline keyboard
-    await query.edit_message_reply_markup(reply_markup=None)
+    # Define the new message text to indicate the selected option
+    selected_option_text = {
+        'bored': "You selected: because I am bored",
+        'afraid': "You selected: because I am afraid",
+        'bad': "You selected: because I am bad"
+    }
+    
+    new_message_text = f'Why do you speak too much?\n{selected_option_text.get(choice, "Invalid choice")}'
+    
+    # Edit the original message text
+    await query.message.edit_text(new_message_text)
+
+
 
        
 async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
