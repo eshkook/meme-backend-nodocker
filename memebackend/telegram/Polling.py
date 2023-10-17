@@ -8,12 +8,6 @@ from telegram.ext import CallbackQueryHandler
 TOKEN: Final = "6467965504:AAHoFv-gir5CNKY8ZJvD-oaj0yYwseuTMmg"
 BOT_USERNAME: Final = "@zbabur_bot"
 
-# the api gateway:
-# "https://xk8r88ywm0.execute-api.eu-west-1.amazonaws.com/botox_function"
-
-# To Steup Webhook for Telegram Bot:
-# f"https://api.telegram.org/bot{TOKEN}/setWebhook"
-
 # commands
 async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text('Hello! Keep your mouth shut and fast')
