@@ -8,6 +8,12 @@ from telegram.ext import CallbackQueryHandler
 TOKEN: Final = "6467965504:AAHoFv-gir5CNKY8ZJvD-oaj0yYwseuTMmg"
 BOT_USERNAME: Final = "@zbabur_bot"
 
+# the api gateway:
+# "https://xk8r88ywm0.execute-api.eu-west-1.amazonaws.com/botox_function"
+
+# To Steup Webhook for Telegram Bot:
+# f"https://api.telegram.org/bot{TOKEN}/setWebhook"
+
 # commands
 async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text('Hello! Keep your mouth shut and fast')
@@ -62,9 +68,6 @@ async def handle_choice(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
     # Edit the original message text
     await query.message.edit_text(new_message_text)
 
-
-
-       
 async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     message_type: str = update.message.chat.type  # either private or group chat
     text: str = update.message.text  # the text that the user wrote
