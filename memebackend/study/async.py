@@ -13,7 +13,7 @@ def func_3():
     print("func 3")
 
 def func_4():
-    print("func 4")    
+    print("func 4")  
 
 async def big_function():
     await func_1()  # Assuming command_1 is an async function
