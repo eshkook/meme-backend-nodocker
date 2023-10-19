@@ -1,12 +1,3 @@
-# TOKEN: Final = "6467965504:AAHoFv-gir5CNKY8ZJvD-oaj0yYwseuTMmg"
-
-# the api gateway: (attatch it to 'url' key to the setWebhook post, in body->form data)
-# "https://xk8r88ywm0.execute-api.eu-west-1.amazonaws.com/botox_function"
-
-# To Steup Webhook for Telegram Bot: (make this post requestto let telgram know where to send the messages)
-# f"https://api.telegram.org/bot{TOKEN}/setWebhook"
-# f"https://api.telegram.org/bot6467965504:AAHoFv-gir5CNKY8ZJvD-oaj0yYwseuTMmg/setWebhook"
-
 import json
 import requests
 
@@ -30,7 +21,7 @@ def lambda_handler(event, context):
             if text.lower() == '/start':
                 payload = {
                     'chat_id': chat_id,
-                    'text': 'Hello! Keep your mouth shut and fast'
+                    'text': f'Hello!'
                 }
                 response = requests.post(url, json=payload)
             elif text.lower() == '/help':
@@ -48,7 +39,8 @@ def lambda_handler(event, context):
             else:
                 words_amount = len(text.split())
                 if words_amount < 5:
-                    response_text = f"You wrote {words_amount} words"
+                    response_text = "You wrote {0} word{1}".format(words_amount, '' if words_amount == 1 else 's')
+                    # response_text = f"You wrote {words_amount} word{'s' if (words_amount-1) else ''}"
                     payload = {
                         'chat_id': chat_id,
                         'text': response_text
@@ -102,44 +94,3 @@ def lambda_handler(event, context):
         return {
             "statusCode": 200
         }
-
-
-
-# import json
-# import requests
-
-# def lambda_handler(event, context):
-#     print(event)
-#     try:
-#         body=json.loads(event['body'])
-        
-#         print(body)
-        
-        
-#         message_part=body['message'].get('text')
-#         print("Message part : {}".format(message_part))
-        
-#         data = {'url': message_part}
-        
-#         payload=requests.post('https://cleanuri.com/api/v1/shorten',...)
-#         short_url=payload.json()['result_url']
-#         print("The short url is : {}".format(short_url))
-        
-#         chat_id=body['message']['chat']['id']
-        
-#         # url = f'https://api.telegram.org/bot{HTTP Token}/sendMessage' #############
-#         url = f'https://api.telegram.org/bot6467965504:AAHoFv-gir5CNKY8ZJvD-oaj0yYwseuTMmg/sendMessage' #################
-#         payload = {
-#                     'chat_id': chat_id,
-#                     'text': short_url
-#                     }
-       
-#         r = requests.post(url,json=payload)
-        
-#         return  {
-#             "statusCode": 200
-#         }
-#     except:
-#         return  {
-#         "statusCode": 200
-#     }
