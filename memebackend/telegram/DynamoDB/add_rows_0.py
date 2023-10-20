@@ -13,8 +13,8 @@ table = dynamodb.Table(table_name)
 def create_entry():
     table.put_item(
         Item={
-            'id': '2',  # Replace 'unique_id' with a unique value
-            'timestamp': '2',  # Replace 'your_timestamp' with a timestamp value
+            'id': '1',  # Replace 'unique_id' with a unique value
+            'timestamp': '1',  # Replace 'your_timestamp' with a timestamp value
             'a': 1,
             'b': 2,
             'c': 3
