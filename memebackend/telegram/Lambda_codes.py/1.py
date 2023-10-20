@@ -63,7 +63,7 @@ def lambda_handler(event, context):
         
 def fetch_available_slots():
     response = table.scan(
-        FilterExpression=Key('is_available').eq(True)
+        FilterExpression=Key('is_available').eq(True) # a linear time search
     )
     available_slots = response.get('Items', [])
     sorted_slots = sorted(available_slots, key=lambda x: x['timestamp'])
