@@ -61,6 +61,14 @@ def lambda_handler(event, context):
         traceback.print_exc()  # New logging statement to print the stack trace
         return {"statusCode": 200}
         
+def fetch_available_slots():
+    response = table.scan(
+        FilterExpression=Key('is_available').eq(True)
+    )
+    available_slots = response.get('Items', [])
+    sorted_slots = sorted(available_slots, key=lambda x: x['timestamp'])
+    return sorted_slots
+
 def send_available_slots(chat_id):
     available_slots = fetch_available_slots()
     if available_slots:
@@ -76,33 +84,3 @@ def send_available_slots(chat_id):
             'text': "Sorry, no available slots at the moment."
         }
     response = requests.post(f'{api_url}/sendMessage', json=payload)
-
-def process_slot_selection(chat_id, slot_id):
-    mark_slot_unavailable(slot_id)
-    slot_time = fetch_slot_time(slot_id)
-    payload = {
-        'chat_id': chat_id,
-        'text': f'You selected: {slot_time}. See you soon!'
-    }
-    response = requests.post(f'{api_url}/sendMessage', json=payload)
-
-def fetch_available_slots():
-    response = table.scan(
-        FilterExpression=Key('is_available').eq(True)
-    )
-    available_slots = response.get('Items', [])
-    sorted_slots = sorted(available_slots, key=lambda x: x['timestamp'])
-    return sorted_slots
-
-def mark_slot_unavailable(slot_id):
-    table.update_item(
-        Key={'id': slot_id},
-        UpdateExpression="SET is_available = :val",
-        ExpressionAttributeValues={':val': False}
-    )
-
-def fetch_slot_time(slot_id):
-    response = table.get_item(
-        Key={'id': slot_id}
-    )
-    return response['Item']['appointment_times']
