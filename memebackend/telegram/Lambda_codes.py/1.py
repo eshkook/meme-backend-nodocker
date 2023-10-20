@@ -46,7 +46,7 @@ def lambda_handler(event, context):
                 )
                 print("Update successful")  # New logging statement
                 response_text = f"You selected: {selected_slot['appointment_times']}. See you soon!"
-                new_message_text = f"Hello! Let's schedule an appointment. Please choose one of the available slots:\n{response_text}"
+                new_message_text = f"Hello! Let's schedule an appointment. Please choose one of the available slots:\n\n{response_text}"
                 edit_url = f'{api_url}/editMessageText'
                 payload = {
                     'chat_id': chat_id,
