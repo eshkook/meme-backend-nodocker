@@ -8,6 +8,8 @@ def lambda_handler(event, context):
         text = None
         query_data = None
         
+        # note that 'body' is a dict. if it has a 'message' key- the user sent text. 
+                                    # if it has 'callback_query' key, the user clicked an option.
         if 'message' in body:
             chat_id = body['message']['chat']['id']
             text = body['message'].get('text', '')
@@ -70,7 +72,7 @@ def lambda_handler(event, context):
                 'afraid': "You selected: because I am afraid",
                 'bad': "You selected: because I am bad"
             }
-            new_message_text = f'Why do you speak too much?\n{selected_option_text.get(query_data, "Invalid choice")}'
+            new_message_text = f'Why do you speak too much?\n\n{selected_option_text.get(query_data, "Invalid choice")}'
             # First, send the predefined response
             payload = {
                 'chat_id': chat_id,
