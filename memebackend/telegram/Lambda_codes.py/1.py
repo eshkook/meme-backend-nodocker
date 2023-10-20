@@ -61,8 +61,6 @@ def lambda_handler(event, context):
         traceback.print_exc()  # New logging statement to print the stack trace
         return {"statusCode": 200}
         
-        
-
 def send_available_slots(chat_id):
     available_slots = fetch_available_slots()
     if available_slots:
