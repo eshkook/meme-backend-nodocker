@@ -17,34 +17,44 @@ def lambda_handler(event, context):
     try:
         body = json.loads(event['body'])
         chat_id = body['message']['chat']['id']
-        user_text = body['message'].get('text', '')
-        
+        user_message = body['message'].get('text', '')
+
+        # Fetch existing conversation
+        current_timestamp = datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')
         response = table.get_item(
-            Key={'id': chat_id}
+            Key={
+                'id': str(chat_id),
+                'timestamp': current_timestamp  # Adjust this value as per your requirements
+            }
         )
         item = response.get('Item')
+
         if item:
-            bot_response = item['conversation'][-1].split(': ')[1] if len(item['conversation']) > 1 else 'keep talking'
-            conversation = item['conversation'] + [f'user: {user_text}', f'bot: {bot_response}']
+            # Existing conversation
+            conversation = item['conversation']
+            bot_reply = conversation[-1].split(': ')[1]
         else:
-            bot_response = 'Hellow!'
-            conversation = [f'bot: {bot_response}']
-        
-        timestamp = datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')
+            # New conversation
+            conversation = ['bot: Hellow!']
+            bot_reply = 'keep talking'
+
+        # Update conversation
+        conversation.extend([f'user: {user_message}', f'bot: {bot_reply}'])
         table.put_item(
             Item={
-                'id': chat_id,
-                'timestamp': timestamp,
+                'id': str(chat_id),
+                'timestamp': current_timestamp,
                 'conversation': conversation
             }
         )
-        
+
+        # Send reply
         payload = {
             'chat_id': chat_id,
-            'text': bot_response
+            'text': bot_reply
         }
         response = requests.post(f'{api_url}/sendMessage', json=payload)
-        
+
         return {"statusCode": 200}
     except Exception as e:
         print(f"An error occurred: {e}")
