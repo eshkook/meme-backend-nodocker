@@ -23,7 +23,13 @@ def lambda_handler(event, context):
         
         if 'message' in body:
             chat_id = body['message']['chat']['id']
-            send_available_slots(chat_id)
+            user_message = body['message'].get('text', '')
+            message_id = body['message']['message_id']
+            if user_message == '/start':
+                send_available_slots(chat_id, message_id)
+            else:
+                collapse_unused_slots(chat_id)
+                shut_up_and_send_available_slots(chat_id, message_id)
 
         elif 'callback_query' in body:
             chat_id = body['callback_query']['message']['chat']['id']
@@ -72,7 +78,7 @@ def fetch_available_slots():
     sorted_slots = sorted(available_slots, key=lambda x: x['appointment_times'])
     return sorted_slots
 
-def send_available_slots(chat_id):
+def send_available_slots(chat_id, message_id):
     available_slots = fetch_available_slots()
     if available_slots:
         keyboard = [[{"text": slot['appointment_times'], "callback_data": slot['id']}] for slot in available_slots]
@@ -81,12 +87,40 @@ def send_available_slots(chat_id):
             'text': "Hello! Let's schedule an appointment. Please choose one of the available slots:",
             'reply_markup': {"inline_keyboard": keyboard}
         }
+        table.put_item(
+            Item={
+                'id': str(chat_id),
+                'message_id': message_id
+            }
+        )
     else:
         payload = {
             'chat_id': chat_id,
             'text': "Sorry, no available slots at the moment."
         }
     response = requests.post(f'{api_url}/sendMessage', json=payload)
+
+def shut_up_and_send_available_slots(chat_id, message_id):
+    available_slots = fetch_available_slots()
+    if available_slots:
+        keyboard = [[{"text": slot['appointment_times'], "callback_data": slot['id']}] for slot in available_slots]
+        payload = {
+            'chat_id': chat_id,
+            'text': "Who said you can talk? Please choose one of the available slots:",
+            'reply_markup': {"inline_keyboard": keyboard}
+        }
+        table.put_item(
+            Item={
+                'id': str(chat_id),
+                'message_id': message_id
+            }
+        )
+    else:
+        payload = {
+            'chat_id': chat_id,
+            'text': "Who said you can talk? Sorry, no available slots at the moment."
+        }     
+    response = requests.post(f'{api_url}/sendMessage', json=payload)    
 
 def send_available_slots_again(chat_id, message_id):
     available_slots = fetch_available_slots()
@@ -98,10 +132,30 @@ def send_available_slots_again(chat_id, message_id):
             'text': "Hello! Let's schedule an appointment. Please choose one of the available slots:\n\nThat slot was already taken! Please choose one of the available slots:",
             'reply_markup': {"inline_keyboard": keyboard}
         }
+        table.put_item(
+            Item={
+                'id': str(chat_id),
+                'message_id': message_id
+            }
+        )
     else:
         payload = {
             'chat_id': chat_id,
             'message_id': message_id,
             'text': "Hello! Let's schedule an appointment. Please choose one of the available slots:\n\nThat slot was already taken! Sorry, no available slots at the moment."
-        }
+        }   
     response = requests.post(edit_url, json=payload)
+
+def collapse_unused_slots(chat_id):
+    item = table.get_item(
+                Key={'id': str(chat_id)}
+            )
+    item = item.get('Item')
+    message_id = item["message_id"]
+    payload = {
+        'chat_id': chat_id,
+        'message_id': message_id,
+        'text': "Hello! Let's schedule an appointment. Please choose one of the available slots:\n\nYou didn''t pick a slot.",
+    }
+   
+    response = requests.post(edit_url, json=payload)    
