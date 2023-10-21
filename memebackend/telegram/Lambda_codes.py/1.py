@@ -3,6 +3,7 @@ import json
 import requests
 import traceback  # <-- Make sure to import traceback
 from boto3.dynamodb.conditions import Key
+import decimal
 
 # AWS DynamoDB setup
 region_name = 'eu-west-1'
@@ -57,7 +58,7 @@ def lambda_handler(event, context):
                 
                 payload = {
                     'chat_id': chat_id,
-                    'message_id': message_id,
+                    'message_id': str(message_id),
                     'text': new_message_text
                 }
                 response = requests.post(edit_url, json=payload)
@@ -90,7 +91,7 @@ def send_available_slots(chat_id, message_id):
         table.put_item(
             Item={
                 'id': str(chat_id),
-                'message_id': message_id
+                'message_id': str(message_id)
             }
         )
     else:
@@ -112,14 +113,14 @@ def shut_up_and_send_available_slots(chat_id, message_id):
         table.put_item(
             Item={
                 'id': str(chat_id),
-                'message_id': message_id
+                'message_id': str(message_id)
             }
         )
     else:
         payload = {
             'chat_id': chat_id,
             'text': "Who said you can talk? Sorry, no available slots at the moment."
-        }     
+        } 
     response = requests.post(f'{api_url}/sendMessage', json=payload)    
 
 def send_available_slots_again(chat_id, message_id):
@@ -128,22 +129,22 @@ def send_available_slots_again(chat_id, message_id):
         keyboard = [[{"text": slot['appointment_times'], "callback_data": slot['id']}] for slot in available_slots]
         payload = {
             'chat_id': chat_id,
-            'message_id': message_id,
+            'message_id': str(message_id),
             'text': "Hello! Let's schedule an appointment. Please choose one of the available slots:\n\nThat slot was already taken! Please choose one of the available slots:",
             'reply_markup': {"inline_keyboard": keyboard}
         }
         table.put_item(
             Item={
                 'id': str(chat_id),
-                'message_id': message_id
+                'message_id': str(message_id)
             }
         )
     else:
         payload = {
             'chat_id': chat_id,
-            'message_id': message_id,
+            'message_id': str(message_id),
             'text': "Hello! Let's schedule an appointment. Please choose one of the available slots:\n\nThat slot was already taken! Sorry, no available slots at the moment."
-        }   
+        }
     response = requests.post(edit_url, json=payload)
 
 def collapse_unused_slots(chat_id):
@@ -154,8 +155,7 @@ def collapse_unused_slots(chat_id):
     message_id = item["message_id"]
     payload = {
         'chat_id': chat_id,
-        'message_id': message_id,
+        'message_id': str(message_id),
         'text': "Hello! Let's schedule an appointment. Please choose one of the available slots:\n\nYou didn''t pick a slot.",
     }
-   
-    response = requests.post(edit_url, json=payload)    
+    response = requests.post(edit_url, json=payload)   
