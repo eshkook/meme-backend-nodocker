@@ -86,7 +86,7 @@ def lambda_handler(event, context):
                 'message_id': body['callback_query']['message']['message_id'],
                 'text': new_message_text
             }
-            response = requests.post(edit_url, json=payload)
+            response = requests.post(edit_url, json=payload) 
 
         return {
             "statusCode": 200
