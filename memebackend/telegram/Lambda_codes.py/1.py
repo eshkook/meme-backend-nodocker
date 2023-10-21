@@ -13,9 +13,9 @@ table = dynamodb.Table(table_name)
 # Telegram setup
 telegram_token = '6467965504:AAHoFv-gir5CNKY8ZJvD-oaj0yYwseuTMmg'
 api_url = f'https://api.telegram.org/bot{telegram_token}'
+edit_url = f'{api_url}/editMessageText'
 
 def lambda_handler(event, context):
-    text = None
     try:
         body = json.loads(event['body'])
         chat_id = None
@@ -23,15 +23,11 @@ def lambda_handler(event, context):
         
         if 'message' in body:
             chat_id = body['message']['chat']['id']
-            text = body['message'].get('text', '')
+            send_available_slots(chat_id)
+
         elif 'callback_query' in body:
             chat_id = body['callback_query']['message']['chat']['id']
             query_data = body['callback_query']['data']
-        
-        if text and text.lower() == '/start':
-            send_available_slots(chat_id)
-            
-        elif query_data:
             appointment_id = query_data  # Assuming the callback data is the appointment ID
 
             # get the chosen slot
@@ -39,6 +35,7 @@ def lambda_handler(event, context):
                 Key={'id': str(appointment_id)}
             )
             item = item.get('Item')
+            message_id = body['callback_query']['message']['message_id']
 
             if item["is_available"]:
                 # Update the selected slot to mark it as unavailable
@@ -49,18 +46,17 @@ def lambda_handler(event, context):
                     UpdateExpression="SET is_available = :false",
                     ExpressionAttributeValues={':false': False}
                 )
-                print("Update successful")  # New logging statement
                 response_text = f"You selected: {item['appointment_times']}. See you soon!"
                 new_message_text = f"Hello! Let's schedule an appointment. Please choose one of the available slots:\n\n{response_text}"
-                edit_url = f'{api_url}/editMessageText'
+                
                 payload = {
                     'chat_id': chat_id,
-                    'message_id': body['callback_query']['message']['message_id'],
+                    'message_id': message_id,
                     'text': new_message_text
                 }
                 response = requests.post(edit_url, json=payload)
             else:
-                pass    ############# 
+                send_available_slots_again(chat_id, message_id) 
         
         return {"statusCode": 200}
     except Exception as e:
@@ -91,3 +87,21 @@ def send_available_slots(chat_id):
             'text': "Sorry, no available slots at the moment."
         }
     response = requests.post(f'{api_url}/sendMessage', json=payload)
+
+def send_available_slots_again(chat_id, message_id):
+    available_slots = fetch_available_slots()
+    if available_slots:
+        keyboard = [[{"text": slot['appointment_times'], "callback_data": slot['id']}] for slot in available_slots]
+        payload = {
+            'chat_id': chat_id,
+            'message_id': message_id,
+            'text': "That slot was already taken! Please choose one of the available slots:",
+            'reply_markup': {"inline_keyboard": keyboard}
+        }
+    else:
+        payload = {
+            'chat_id': chat_id,
+            'message_id': message_id,
+            'text': "That slot was already taken! Sorry, no available slots at the moment."
+        }
+    response = requests.post(edit_url, json=payload)
