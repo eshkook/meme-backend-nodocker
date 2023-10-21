@@ -20,7 +20,7 @@ def create_appointments(date):
         for index, time in enumerate(appointment_times):
             appointment_id = f"{date.replace('-', '')}{time.replace(':', '')}"
             appointment_time_range = f"{time}- {(datetime.strptime(time, '%Y-%m-%d %H:%M') + timedelta(hours=1)).strftime('%H:%M')}"
-            if index:
+            if index>-6:
                 batch.put_item(
                     Item={
                         'id': appointment_id,

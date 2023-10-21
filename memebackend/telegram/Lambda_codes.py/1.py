@@ -95,13 +95,13 @@ def send_available_slots_again(chat_id, message_id):
         payload = {
             'chat_id': chat_id,
             'message_id': message_id,
-            'text': "That slot was already taken! Please choose one of the available slots:",
+            'text': "Hello! Let's schedule an appointment. Please choose one of the available slots:\n\nThat slot was already taken! Please choose one of the available slots:",
             'reply_markup': {"inline_keyboard": keyboard}
         }
     else:
         payload = {
             'chat_id': chat_id,
             'message_id': message_id,
-            'text': "That slot was already taken! Sorry, no available slots at the moment."
+            'text': "Hello! Let's schedule an appointment. Please choose one of the available slots:\n\nThat slot was already taken! Sorry, no available slots at the moment."
         }
     response = requests.post(edit_url, json=payload)
