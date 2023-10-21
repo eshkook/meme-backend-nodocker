@@ -5,7 +5,7 @@ from datetime import datetime
 
 # AWS DynamoDB setup
 region_name = 'eu-west-1'
-table_name = 'botox_table'
+table_name = 'botox_2_table'
 dynamodb = boto3.resource('dynamodb', region_name=region_name)
 table = dynamodb.Table(table_name)
 
@@ -20,30 +20,34 @@ def lambda_handler(event, context):
         user_message = body['message'].get('text', '')
 
         # Fetch existing conversation
-        current_timestamp = datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')
         response = table.get_item(
-            Key={
-                'id': str(chat_id),
-                'timestamp': current_timestamp  # Adjust this value as per your requirements
-            }
+            Key={'id': str(chat_id)}
         )
         item = response.get('Item')
 
         if item:
             # Existing conversation
             conversation = item['conversation']
-            bot_reply = conversation[-1].split(': ')[1]
+            if len(conversation) == 1:
+                bot_reply = 'keep talking'
+            else:
+                bot_reply = conversation[-2]["message"]
+
+            # Update conversation
+            conversation.extend([{"entity": "user",
+                                "message": user_message}],
+                                [{"entity": "bot",
+                                "message": bot_reply}])    
         else:
             # New conversation
-            conversation = ['bot: Hellow!']
-            bot_reply = 'keep talking'
+            bot_reply = 'Hellow!'
+            conversation = [{"entity": "bot",
+                             "message": "Hellow!"}]
 
-        # Update conversation
-        conversation.extend([f'user: {user_message}', f'bot: {bot_reply}'])
+        
         table.put_item(
             Item={
                 'id': str(chat_id),
-                'timestamp': current_timestamp,
                 'conversation': conversation
             }
         )

@@ -5,25 +5,23 @@ session = boto3.session.Session(region_name='eu-west-1')
 dynamodb = session.resource('dynamodb')
 
 # Initialize DynamoDB Resource
-table = dynamodb.Table('botox_table')
+table = dynamodb.Table('botox_2_table')
 
 # Scan the table to get all item keys
 response = table.scan(
-    ProjectionExpression='#id, #ts',
+    ProjectionExpression='#id',
     ExpressionAttributeNames={
-        '#id': 'id',
-        '#ts': 'timestamp'
+        '#id': 'id'
     }
 )
 items = response['Items']
 
 # Iterate through the keys and delete each item
 for item in items:
-    print(f"Deleting item {item['id']} at {item['timestamp']}...")
+    print(f"Deleting item {item['id']}...")
     table.delete_item(
         Key={
-            'id': item['id'],
-            'timestamp': item['timestamp']
+            'id': item['id']
         }
     )
 print("All items deleted.")

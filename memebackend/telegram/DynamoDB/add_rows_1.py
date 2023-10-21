@@ -1,7 +1,7 @@
 import boto3
 from datetime import datetime, timedelta
 
-table_name = "botox_table"
+table_name = "botox_2_table"
 region_name = 'eu-west-1'
 
 # Initialize a session using Amazon DynamoDB

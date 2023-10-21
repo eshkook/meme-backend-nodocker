@@ -1,6 +1,6 @@
 import boto3
 
-table_name = "botox_table"
+table_name = "botox_2_table"
 region_name = 'eu-west-1'
 
 # Initialize a session using Amazon DynamoDB
@@ -17,7 +17,8 @@ def create_entry():
             'timestamp': '1',  # Replace 'your_timestamp' with a timestamp value
             'a': 1,
             'b': 2,
-            'c': 3
+            'c': 3,
+            "g":7
         }
     )
 
