@@ -6,7 +6,7 @@ from boto3.dynamodb.conditions import Key
 
 # AWS DynamoDB setup
 region_name = 'eu-west-1'
-table_name = 'botox_table'
+table_name = 'botox_3_table'
 dynamodb = boto3.resource('dynamodb', region_name=region_name)
 table = dynamodb.Table(table_name)
 
@@ -33,19 +33,24 @@ def lambda_handler(event, context):
             
         elif query_data:
             appointment_id = query_data  # Assuming the callback data is the appointment ID
-            selected_slot = next((slot for slot in fetch_available_slots() if slot['id'] == appointment_id), None)
-            if selected_slot:
+
+            # get the chosen slot
+            item = table.get_item(
+                Key={'id': str(appointment_id)}
+            )
+            item = item.get('Item')
+
+            if item["is_available"]:
                 # Update the selected slot to mark it as unavailable
                 table.update_item(
                     Key={
                         'id': appointment_id,
-                        'timestamp': selected_slot['timestamp']  # assuming selected_slot has a 'timestamp' field
                     },
                     UpdateExpression="SET is_available = :false",
                     ExpressionAttributeValues={':false': False}
                 )
                 print("Update successful")  # New logging statement
-                response_text = f"You selected: {selected_slot['appointment_times']}. See you soon!"
+                response_text = f"You selected: {item['appointment_times']}. See you soon!"
                 new_message_text = f"Hello! Let's schedule an appointment. Please choose one of the available slots:\n\n{response_text}"
                 edit_url = f'{api_url}/editMessageText'
                 payload = {
@@ -54,6 +59,8 @@ def lambda_handler(event, context):
                     'text': new_message_text
                 }
                 response = requests.post(edit_url, json=payload)
+            else:
+                pass    ############# 
         
         return {"statusCode": 200}
     except Exception as e:
@@ -66,7 +73,7 @@ def fetch_available_slots():
         FilterExpression=Key('is_available').eq(True) # a linear time search
     )
     available_slots = response.get('Items', [])
-    sorted_slots = sorted(available_slots, key=lambda x: x['timestamp'])
+    sorted_slots = sorted(available_slots, key=lambda x: x['appointment_times'])
     return sorted_slots
 
 def send_available_slots(chat_id):

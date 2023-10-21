@@ -19,13 +19,13 @@ def lambda_handler(event, context):
         chat_id = body['message']['chat']['id']
         user_message = body['message'].get('text', '')
 
-        # Fetch existing conversation
+        # try fetching conversation (will be None if the conversation doesn't exist)
         response = table.get_item(
             Key={'id': str(chat_id)}
         )
         item = response.get('Item')
 
-        if item:
+        if item and user_message != '/start':
             # Existing conversation
             conversation = item['conversation']
             if len(conversation) == 1:
@@ -35,8 +35,8 @@ def lambda_handler(event, context):
 
             # Update conversation
             conversation.extend([{"entity": "user",
-                                "message": user_message}],
-                                [{"entity": "bot",
+                                "message": user_message},
+                                {"entity": "bot",
                                 "message": bot_reply}])    
         else:
             # New conversation

@@ -1,7 +1,7 @@
 import boto3
 from datetime import datetime, timedelta
 
-table_name = "botox_2_table"
+table_name = "botox_3_table"
 region_name = 'eu-west-1'
 
 # Initialize a session using Amazon DynamoDB
@@ -23,7 +23,7 @@ def create_appointments(date):
             batch.put_item(
                 Item={
                     'id': appointment_id,
-                    'timestamp': time,
+                    # 'timestamp': time,
                     'is_available': True,
                     'user_cell_number': None,
                     'user_full_name': None,
