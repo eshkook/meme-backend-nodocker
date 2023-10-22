@@ -51,6 +51,7 @@ def lambda_handler(event, context):
         elif 'callback_query' in body:
             chat_id = body['callback_query']['message']['chat']['id']
             query_data = body['callback_query']['data']
+            message_id = body['callback_query']['message']['message_id']
 
             if query_data == 'keep':
                 # check when is the appointment:
@@ -72,7 +73,40 @@ def lambda_handler(event, context):
                 response = requests.post(edit_url, json=payload)
 
             elif query_data == 'cancel':
-                pass
+                # check when is the appointment:
+                item = table.get_item(
+                    Key={'id': chat_id}
+                )
+                item = item.get('Item')
+                appointment_id = item.get('appointment_id')
+                item = table.get_item(
+                    Key={'id': appointment_id}
+                )
+                item = item.get('Item')
+                appointment_times = item.get('appointment_times')
+
+                # edit the earlier message
+                payload = {
+                    'chat_id': chat_id,
+                    'message_id': int(message_id),
+                    'text': f"You already have a scheduled appointment at {appointment_times}. What would you like to do:\n\nYou selected: cancel the appointment. Have a great day!",
+                }
+                response = requests.post(edit_url, json=payload)
+
+                # Update the selected slot to mark it as available:
+                table.update_item(
+                    Key={
+                        'id': appointment_id,
+                    },
+                    UpdateExpression="SET is_available = :true",
+                    ExpressionAttributeValues={':true': True}
+                )
+                # delete chat_id from DB:
+                table.delete_item(
+                    Key={
+                        'id': chat_id
+                    }
+                )
 
             elif query_data == 'reschedule':
                 pass
