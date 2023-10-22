@@ -27,6 +27,15 @@ def lambda_handler(event, context):
             user_message = body['message'].get('text', '')
             message_id = body['message']['message_id']
             if user_message == '/start':
+                # check if the user already has an appointment:
+                item = table.get_item(
+                    Key={'id': chat_id}
+                )
+                item = item.get('Item')
+                appointment_id = item.get('appointment_id')
+                if appointment_id: # then the user already has an appointment scheduled
+                    ask_to_cancel_appointment(chat_id, appointment_id)
+
                 send_available_slots(chat_id, message_id)
             else:
                 shut_up_and_send_available_slots(chat_id, message_id)
@@ -167,3 +176,21 @@ def collapse_unused_slots(chat_id):
     print(response.json())
     print(99999999999999)
      
+def ask_to_cancel_appointment(chat_id, appointment_id):
+    item = table.get_item(
+        Key={'id': appointment_id}
+    )
+    item = item.get('Item')
+    appointment_times = item[appointment_id]
+    keyboard = [
+                    [{"text": "Keep the appointmrnt", "callback_data": 'keep'}],
+                    [{"text": "Cancel the appointment", "callback_data": 'cancel'}],
+                    [{"text": "Reschedule the appointment", "callback_data": 'reschedule'}]
+                ]
+    payload = {
+        'chat_id': chat_id,
+        'text': f"You already have a scheduled appointment at {appointment_times}. What would you like to do:",
+        'reply_markup': {"inline_keyboard": keyboard}
+    }
+    response = requests.post(f'{api_url}/sendMessage', json=payload)
+        
