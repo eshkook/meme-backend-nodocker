@@ -5,7 +5,7 @@ session = boto3.session.Session(region_name='eu-west-1')
 dynamodb = session.resource('dynamodb')
 
 # Initialize DynamoDB Resource
-table = dynamodb.Table('botox_2_table')
+table = dynamodb.Table('botox_3_table')
 
 # Scan the table to get all item keys
 response = table.scan(

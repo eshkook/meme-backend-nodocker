@@ -26,8 +26,7 @@ def create_appointments(date):
                         'id': appointment_id,
                         # 'timestamp': time,
                         'is_available': True,
-                        'user_cell_number': None,
-                        'user_full_name': None,
+                        'chat_id': None,
                         'appointment_times': appointment_time_range
                     }
                 )

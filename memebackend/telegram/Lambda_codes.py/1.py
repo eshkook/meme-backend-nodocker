@@ -193,13 +193,25 @@ def schedule_appointment(chat_id, appointment_id, message_id):
 
     if item["is_available"]:
         # Update the selected slot to mark it as unavailable
+        # table.update_item(
+        #     Key={
+        #         'id': appointment_id,
+        #     },
+        #     UpdateExpression="SET is_available = :false",
+        #     ExpressionAttributeValues={':false': False}
+        # )
+
         table.update_item(
             Key={
                 'id': appointment_id,
             },
-            UpdateExpression="SET is_available = :false",
-            ExpressionAttributeValues={':false': False}
+            UpdateExpression="SET is_available = :false, chat_id = :chat_id",
+            ExpressionAttributeValues={
+                ':false': False,
+                ':chat_id': chat_id  
+            }
         )
+
         response_text = f"You selected: {item['appointment_times']}. See you soon!"
         new_message_text = f"Hello! Let's schedule an appointment. Please choose one of the available slots:\n\n{response_text}"
         
