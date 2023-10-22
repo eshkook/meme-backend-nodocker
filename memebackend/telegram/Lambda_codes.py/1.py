@@ -36,11 +36,9 @@ def lambda_handler(event, context):
                 if appointment_id: # then the user already has an appointment scheduled
                     ask_to_cancel_appointment(chat_id, appointment_id)
                 else:
-                    send_available_slots(chat_id, message_id)
-                 
+                    send_available_slots(chat_id, message_id) ### modify it to also collapse prior unused slots if exist
             else:
-                shut_up_and_send_available_slots(chat_id, message_id)
-                collapse_unused_slots(chat_id) # first check if needs collapsing???????????????????????????????
+                shut_up_and_send_available_slots(chat_id, message_id) ### modify it to also collapse prior unused slots if exist
                 
         elif 'callback_query' in body:
             chat_id = body['callback_query']['message']['chat']['id']
