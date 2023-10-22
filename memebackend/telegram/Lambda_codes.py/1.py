@@ -32,14 +32,15 @@ def lambda_handler(event, context):
                     Key={'id': chat_id}
                 )
                 item = item.get('Item')
-                appointment_id = item.get('appointment_id')
+                appointment_id = item.get('appointment_id') if item else None
                 if appointment_id: # then the user already has an appointment scheduled
                     ask_to_cancel_appointment(chat_id, appointment_id)
-
-                send_available_slots(chat_id, message_id)
+                else:
+                    send_available_slots(chat_id, message_id)
+                 
             else:
                 shut_up_and_send_available_slots(chat_id, message_id)
-                collapse_unused_slots(chat_id)
+                collapse_unused_slots(chat_id) # first check if needs collapsing???????????????????????????????
                 
         elif 'callback_query' in body:
             chat_id = body['callback_query']['message']['chat']['id']
@@ -101,7 +102,8 @@ def send_available_slots(chat_id, message_id):
         table.put_item(
             Item={
                 'id': str(chat_id),
-                'message_id': str(message_id)
+                'message_id': str(message_id),
+                'appointment_id': None
             }
         )
     else:
