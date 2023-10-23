@@ -1,7 +1,7 @@
 import boto3
 import json
 import requests
-import traceback  # <-- Make sure to import traceback
+import traceback  
 from boto3.dynamodb.conditions import Key
 import decimal
 
@@ -29,10 +29,11 @@ def lambda_handler(event, context):
 
             # check if the user already has an appointment:
             item = table.get_item(
-                Key={'id': chat_id}
+                Key={'id': str(chat_id)}
             )
             item = item.get('Item')
             appointment_id = item.get('appointment_id') if item else None
+            print("appointment_id", appointment_id)
             if user_message == '/start':
                 
                 if appointment_id: # then the user already has an appointment scheduled
@@ -56,7 +57,7 @@ def lambda_handler(event, context):
             if query_data == 'keep':
                 # check when is the appointment:
                 item = table.get_item(
-                    Key={'id': chat_id}
+                    Key={'id': str(chat_id)}
                 )
                 item = item.get('Item')
                 appointment_id = item.get('appointment_id')
@@ -66,7 +67,7 @@ def lambda_handler(event, context):
                 item = item.get('Item')
                 appointment_times = item.get('appointment_times')
                 payload = {
-                    'chat_id': chat_id,
+                    'chat_id': str(chat_id),
                     'message_id': int(message_id),
                     'text': f"You already have a scheduled appointment at {appointment_times}. What would you like to do:\n\nYou selected: Keep the appointment. See you soon!",
                 }
@@ -75,7 +76,7 @@ def lambda_handler(event, context):
             elif query_data == 'cancel':
                 # check when is the appointment:
                 item = table.get_item(
-                    Key={'id': chat_id}
+                    Key={'id': str(chat_id)}
                 )
                 item = item.get('Item')
                 appointment_id = item.get('appointment_id')
@@ -87,7 +88,7 @@ def lambda_handler(event, context):
 
                 # edit the earlier message
                 payload = {
-                    'chat_id': chat_id,
+                    'chat_id': str(chat_id),
                     'message_id': int(message_id),
                     'text': f"You already have a scheduled appointment at {appointment_times}. What would you like to do:\n\nYou selected: Cancel the appointment. Have a great day!",
                 }
@@ -104,14 +105,14 @@ def lambda_handler(event, context):
                 # delete chat_id from DB:
                 table.delete_item(
                     Key={
-                        'id': chat_id
+                        'id': str(chat_id)
                     }
                 )
 
             elif query_data == 'reschedule':
                 # check when is the appointment:
                 item = table.get_item(
-                    Key={'id': chat_id}
+                    Key={'id': str(chat_id)}
                 )
                 item = item.get('Item')
                 appointment_id = item.get('appointment_id')
@@ -125,7 +126,7 @@ def lambda_handler(event, context):
                 available_slots = fetch_available_slots()
                 keyboard = [[{"text": slot['appointment_times'], "callback_data": slot['id']}] for slot in available_slots]
                 payload = {
-                    'chat_id': chat_id,
+                    'chat_id': str(chat_id),
                     'message_id': int(message_id),
                     'text': f"You already have a scheduled appointment at {appointment_times}. What would you like to do:\n\nYou selected: Reschedule the appointment.\n\nLet's schedule an appointment. Please choose one of the available slots:",
                     'reply_markup': {"inline_keyboard": keyboard}
@@ -144,7 +145,7 @@ def lambda_handler(event, context):
                 # Update the chat_id:
                 table.update_item(
                     Key={
-                        'id': chat_id,
+                        'id': str(chat_id),
                     },
                     UpdateExpression="SET appointment_id = :none",
                     ExpressionAttributeValues={':none': None}
@@ -174,7 +175,7 @@ def send_available_slots(chat_id, message_id):
     if available_slots:
         keyboard = [[{"text": slot['appointment_times'], "callback_data": slot['id']}] for slot in available_slots]
         payload = {
-            'chat_id': chat_id,
+            'chat_id': str(chat_id),
             'text': "Hello! Let's schedule an appointment. Please choose one of the available slots:",
             'reply_markup': {"inline_keyboard": keyboard}
         }
@@ -198,7 +199,7 @@ def shut_up_and_send_available_slots(chat_id, message_id):
     if available_slots:
         keyboard = [[{"text": slot['appointment_times'], "callback_data": slot['id']}] for slot in available_slots]
         payload = {
-            'chat_id': chat_id,
+            'chat_id': str(chat_id),
             'text': "Who said you can talk? Please choose one of the available slots:",
             'reply_markup': {"inline_keyboard": keyboard}
         }
@@ -212,7 +213,7 @@ def shut_up_and_send_available_slots(chat_id, message_id):
         )
     else:
         payload = {
-            'chat_id': chat_id,
+            'chat_id': str(chat_id),
             'text': "Who said you can talk? Sorry, no available slots at the moment."
         } 
         response = requests.post(f'{api_url}/sendMessage', json=payload)    
@@ -222,7 +223,7 @@ def send_available_slots_again(chat_id, message_id):
     if available_slots:
         keyboard = [[{"text": slot['appointment_times'], "callback_data": slot['id']}] for slot in available_slots]
         payload = {
-            'chat_id': chat_id,
+            'chat_id': str(chat_id),
             'message_id': str(message_id),
             'text': "Hello! Let's schedule an appointment. Please choose one of the available slots:\n\nThat slot was already taken! Please choose one of the available slots:",
             'reply_markup': {"inline_keyboard": keyboard}
@@ -237,7 +238,7 @@ def send_available_slots_again(chat_id, message_id):
         )
     else:
         payload = {
-            'chat_id': chat_id,
+            'chat_id': str(chat_id),
             'message_id': str(message_id),
             'text': "Hello! Let's schedule an appointment. Please choose one of the available slots:\n\nThat slot was already taken! Sorry, no available slots at the moment."
         }
@@ -250,7 +251,7 @@ def collapse_unused_slots(chat_id):
     item = item.get('Item')
     message_id = item["message_id"]
     payload = {
-        'chat_id': chat_id,
+        'chat_id': str(chat_id),
         'message_id': int(message_id),
         'text': "Hello! Let's schedule an appointment. Please choose one of the available slots:\n\nYou didn't pick a slot.",
     }
@@ -271,7 +272,7 @@ def ask_to_cancel_appointment(chat_id, appointment_id):
                     [{"text": "Reschedule the appointment", "callback_data": 'reschedule'}]
                 ]
     payload = {
-        'chat_id': chat_id,
+        'chat_id': str(chat_id),
         'text': f"You already have a scheduled appointment at {appointment_times}. What would you like to do:",
         'reply_markup': {"inline_keyboard": keyboard}
     }
@@ -285,6 +286,16 @@ def schedule_appointment(chat_id, appointment_id, message_id):
     item = item.get('Item')
 
     if item["is_available"]:
+        response_text = f"You selected: {item['appointment_times']}. See you soon!"
+        new_message_text = f"Hello! Let's schedule an appointment. Please choose one of the available slots:\n\n{response_text}"
+        
+        payload = {
+            'chat_id': str(chat_id),
+            'message_id': str(message_id),
+            'text': new_message_text
+        }
+        response = requests.post(edit_url, json=payload)
+
         table.update_item(
             Key={
                 'id': appointment_id,
@@ -292,18 +303,18 @@ def schedule_appointment(chat_id, appointment_id, message_id):
             UpdateExpression="SET is_available = :false, chat_id = :chat_id",
             ExpressionAttributeValues={
                 ':false': False,
-                ':chat_id': chat_id  
+                ':chat_id': str(chat_id)  
             }
         )
 
-        response_text = f"You selected: {item['appointment_times']}. See you soon!"
-        new_message_text = f"Hello! Let's schedule an appointment. Please choose one of the available slots:\n\n{response_text}"
-        
-        payload = {
-            'chat_id': chat_id,
-            'message_id': str(message_id),
-            'text': new_message_text
-        }
-        response = requests.post(edit_url, json=payload)
+        table.update_item(
+            Key={
+                'id': str(chat_id),
+            },
+            UpdateExpression="SET appointment_id = :appointment_id",
+            ExpressionAttributeValues={
+                ':appointment_id': appointment_id
+            }
+        )
     else:
         send_available_slots_again(chat_id, message_id)
