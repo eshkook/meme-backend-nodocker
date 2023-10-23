@@ -138,8 +138,9 @@ def lambda_handler(event, context):
                     Key={
                         'id': appointment_id,
                     },
-                    UpdateExpression="SET is_available = :true",
-                    ExpressionAttributeValues={':true': True}
+                    UpdateExpression="SET is_available = :true, chat_id = :none",
+                    ExpressionAttributeValues={':true': True,
+                                               ':none': None}
                 )
                 # delete chat_id from DB:
                 table.delete_item(
@@ -166,7 +167,7 @@ def lambda_handler(event, context):
                     Key={
                         'id': appointment_id,
                     },
-                    UpdateExpression="SET is_available = :true",
+                    UpdateExpression="SET is_available = :true, ",
                     ExpressionAttributeValues={':true': True}
                 )
 
@@ -175,8 +176,9 @@ def lambda_handler(event, context):
                     Key={
                         'id': str(chat_id),
                     },
-                    UpdateExpression="SET appointment_id = :none",
-                    ExpressionAttributeValues={':none': None}
+                    UpdateExpression="SET appointment_id = :none, chat_id = :none",
+                    ExpressionAttributeValues={':none': None,
+                                               ':none': None}
                 )
 
                 # edit the earlier message
@@ -201,7 +203,6 @@ def lambda_handler(event, context):
                 appointment_id = query_data  
                 message_id = body['callback_query']['message']['message_id']
                 schedule_appointment(chat_id, appointment_id, message_id)
-                print(222222222222222222222222222222222222) 
         
         return {"statusCode": 200}
     except Exception as e:
@@ -232,7 +233,8 @@ def send_available_slots(chat_id, message_id):
             Item={
                 'id': str(chat_id),
                 'message_id': str(message_id),
-                'appointment_id': None
+                'appointment_id': None,
+                'canceling_options_message_id': None 
             }
         )
     else:
