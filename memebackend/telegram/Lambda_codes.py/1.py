@@ -54,8 +54,8 @@ def lambda_handler(event, context):
                 Key={
                     'id': str(chat_id),
                     },
-                    UpdateExpression="SET canceling_options_message_id = :message_id",
-                    ExpressionAttributeValues={':message_id': message_id}
+                    UpdateExpression="SET canceling_options_message_id = :canceling_options_message_id",
+                    ExpressionAttributeValues={':canceling_options_message_id': str(message_id)}
                 )
 
             else:    
@@ -68,10 +68,10 @@ def lambda_handler(event, context):
                         'id': str(chat_id),
                         },
                         UpdateExpression="SET canceling_options_message_id = :canceling_options_message_id",
-                        ExpressionAttributeValues={':canceling_options_message_id': message_id}
+                        ExpressionAttributeValues={':canceling_options_message_id': str(message_id)}
                     )
                 else:
-                    if item:
+                    if item and item['message_id']:
                         collapse_unused_slots(chat_id)
 
                     send_available_slots(chat_id, message_id)
@@ -99,6 +99,14 @@ def lambda_handler(event, context):
                     'text': f"You already have a scheduled appointment at {appointment_times}. What would you like to do:\n\nYou selected: Keep the appointment.",
                 }
                 response = requests.post(edit_url, json=payload)
+
+                table.update_item(
+                    Key={
+                        'id': str(chat_id),
+                    },
+                    UpdateExpression="SET canceling_options_message_id = :none",
+                    ExpressionAttributeValues={':none': None}
+                )
 
                 payload = {
                     'chat_id': str(chat_id),
@@ -176,9 +184,10 @@ def lambda_handler(event, context):
                     Key={
                         'id': str(chat_id),
                     },
-                    UpdateExpression="SET appointment_id = :none, chat_id = :none",
+                    UpdateExpression="SET appointment_id = :none, canceling_options_message_id = :none",
                     ExpressionAttributeValues={':none': None,
-                                               ':none': None}
+                                               ':none': None,
+                                              }
                 )
 
                 # edit the earlier message
@@ -250,7 +259,7 @@ def send_available_slots_again(chat_id, message_id):
         keyboard = [[{"text": slot['appointment_times'], "callback_data": slot['id']}] for slot in available_slots]
         payload = {
             'chat_id': str(chat_id),
-            'message_id': str(message_id),
+            'message_id': int(message_id),
             'text': "Hello! Let's schedule an appointment. Please choose one of the available slots:\n\nThat slot was already taken! Please choose one of the available slots:",
             'reply_markup': {"inline_keyboard": keyboard}
         }
@@ -266,7 +275,7 @@ def send_available_slots_again(chat_id, message_id):
     else:
         payload = {
             'chat_id': str(chat_id),
-            'message_id': str(message_id),
+            'message_id': int(message_id),
             'text': "Hello! Let's schedule an appointment. Please choose one of the available slots:\n\nThat slot was already taken! Sorry, no available slots at the moment."
         }
         response = requests.post(edit_url, json=payload)
@@ -319,7 +328,7 @@ def schedule_appointment(chat_id, appointment_id, message_id):
         
         payload = {
             'chat_id': str(chat_id),
-            'message_id': str(message_id),
+            'message_id': int(message_id),
             'text': new_message_text
         }
         response = requests.post(edit_url, json=payload)
@@ -339,9 +348,10 @@ def schedule_appointment(chat_id, appointment_id, message_id):
             Key={
                 'id': str(chat_id),
             },
-            UpdateExpression="SET appointment_id = :appointment_id",
+            UpdateExpression="SET appointment_id = :appointment_id, message_id = :none",
             ExpressionAttributeValues={
-                ':appointment_id': appointment_id
+                ':appointment_id': appointment_id,
+                ':none': None
             }
         )
     else:
