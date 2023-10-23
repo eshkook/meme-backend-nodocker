@@ -33,6 +33,7 @@ def lambda_handler(event, context):
             )
             item = item.get('Item')
 
+            # check if there are unused appointment-canceling options
             if item and item["canceling_options_message_id"]:
                 old_message_id = item["canceling_options_message_id"]
                 appointment_id = item['appointment_id']
@@ -66,8 +67,8 @@ def lambda_handler(event, context):
                     Key={
                         'id': str(chat_id),
                         },
-                        UpdateExpression="SET message_id = :message_id",
-                        ExpressionAttributeValues={':message_id': message_id}
+                        UpdateExpression="SET canceling_options_message_id = :canceling_options_message_id",
+                        ExpressionAttributeValues={':canceling_options_message_id': message_id}
                     )
                 else:
                     if item:
@@ -196,10 +197,11 @@ def lambda_handler(event, context):
                 }
                 response = requests.post(sendMessage_url, json=payload)
 
-            else:   
-                appointment_id = query_data  # Assuming the callback data is the appointment ID
+            else:  # then the callback data is the appointment ID 
+                appointment_id = query_data  
                 message_id = body['callback_query']['message']['message_id']
-                schedule_appointment(chat_id, appointment_id, message_id) 
+                schedule_appointment(chat_id, appointment_id, message_id)
+                print(222222222222222222222222222222222222) 
         
         return {"statusCode": 200}
     except Exception as e:
