@@ -14,6 +14,7 @@ table = dynamodb.Table(table_name)
 # Telegram setup
 telegram_token = '6467965504:AAHoFv-gir5CNKY8ZJvD-oaj0yYwseuTMmg'
 api_url = f'https://api.telegram.org/bot{telegram_token}'
+sendMessage_url = f'{api_url}/sendMessage'
 edit_url = f'{api_url}/editMessageText'
 
 def lambda_handler(event, context):
@@ -68,9 +69,15 @@ def lambda_handler(event, context):
                 payload = {
                     'chat_id': str(chat_id),
                     'message_id': int(message_id),
-                    'text': f"You already have a scheduled appointment at {appointment_times}. What would you like to do:\n\nYou selected: Keep the appointment.\n\nSee you soon!",
+                    'text': f"You already have a scheduled appointment at {appointment_times}. What would you like to do:\n\nYou selected: Keep the appointment.",
                 }
                 response = requests.post(edit_url, json=payload)
+
+                payload = {
+                    'chat_id': str(chat_id),
+                    'text': f"Your appointment is kept. See you soon!",
+                }
+                response = requests.post(sendMessage_url, json=payload)
 
             elif query_data == 'cancel':
                 # check when is the appointment:
@@ -89,9 +96,15 @@ def lambda_handler(event, context):
                 payload = {
                     'chat_id': str(chat_id),
                     'message_id': int(message_id),
-                    'text': f"You already have a scheduled appointment at {appointment_times}. What would you like to do:\n\nYou selected: Cancel the appointment.\n\nHave a great day!",
+                    'text': f"You already have a scheduled appointment at {appointment_times}. What would you like to do:\n\nYou selected: Cancel the appointment.",
                 }
                 response = requests.post(edit_url, json=payload)
+
+                payload = {
+                    'chat_id': str(chat_id),
+                    'text': f"Your appointment has been canceled. Have a great day!",
+                }
+                response = requests.post(sendMessage_url, json=payload)
 
                 # Update the selected slot to mark it as available:
                 table.update_item(
@@ -121,17 +134,6 @@ def lambda_handler(event, context):
                 item = item.get('Item')
                 appointment_times = item.get('appointment_times')
 
-                # edit the earlier message
-                available_slots = fetch_available_slots()
-                keyboard = [[{"text": slot['appointment_times'], "callback_data": slot['id']}] for slot in available_slots]
-                payload = {
-                    'chat_id': str(chat_id),
-                    'message_id': int(message_id),
-                    'text': f"You already have a scheduled appointment at {appointment_times}. What would you like to do:\n\nYou selected: Reschedule the appointment.\n\nLet's schedule an appointment. Please choose one of the available slots:",
-                    'reply_markup': {"inline_keyboard": keyboard}
-                }
-                response = requests.post(edit_url, json=payload)
-
                 # Update the selected slot to mark it as available:
                 table.update_item(
                     Key={
@@ -149,6 +151,24 @@ def lambda_handler(event, context):
                     UpdateExpression="SET appointment_id = :none",
                     ExpressionAttributeValues={':none': None}
                 )
+
+                # edit the earlier message
+                available_slots = fetch_available_slots()
+                payload = {
+                    'chat_id': str(chat_id),
+                    'message_id': int(message_id),
+                    'text': f"You already have a scheduled appointment at {appointment_times}. What would you like to do:\n\nYou selected: Reschedule the appointment.",
+                    
+                }
+                response = requests.post(edit_url, json=payload)
+
+                keyboard = [[{"text": slot['appointment_times'], "callback_data": slot['id']}] for slot in available_slots]
+                payload = {
+                    'chat_id': str(chat_id),
+                    'text': f"Let's reschedule an appointment. Please choose one of the available slots:",
+                    'reply_markup': {"inline_keyboard": keyboard}
+                }
+                response = requests.post(sendMessage_url, json=payload)
 
             else:   
                 appointment_id = query_data  # Assuming the callback data is the appointment ID
@@ -178,7 +198,7 @@ def send_available_slots(chat_id, message_id):
             'text': "Hello! Let's schedule an appointment. Please choose one of the available slots:",
             'reply_markup': {"inline_keyboard": keyboard}
         }
-        response = requests.post(f'{api_url}/sendMessage', json=payload)
+        response = requests.post(sendMessage_url, json=payload)
         table.put_item(
             Item={
                 'id': str(chat_id),
@@ -191,7 +211,7 @@ def send_available_slots(chat_id, message_id):
             'chat_id': chat_id,
             'text': "Sorry, no available slots at the moment."
         }
-        response = requests.post(f'{api_url}/sendMessage', json=payload)
+        response = requests.post(sendMessage_url, json=payload)
 
 def shut_up_and_send_available_slots(chat_id, message_id):
     available_slots = fetch_available_slots()
@@ -202,7 +222,7 @@ def shut_up_and_send_available_slots(chat_id, message_id):
             'text': "Who said you can talk? Please choose one of the available slots:",
             'reply_markup': {"inline_keyboard": keyboard}
         }
-        response = requests.post(f'{api_url}/sendMessage', json=payload)
+        response = requests.post(sendMessage_url, json=payload)
         table.put_item(
             Item={
                 'id': str(chat_id),
@@ -215,7 +235,7 @@ def shut_up_and_send_available_slots(chat_id, message_id):
             'chat_id': str(chat_id),
             'text': "Who said you can talk? Sorry, no available slots at the moment."
         } 
-        response = requests.post(f'{api_url}/sendMessage', json=payload)    
+        response = requests.post(sendMessage_url, json=payload)    
 
 def send_available_slots_again(chat_id, message_id):
     available_slots = fetch_available_slots()
@@ -227,7 +247,7 @@ def send_available_slots_again(chat_id, message_id):
             'text': "Hello! Let's schedule an appointment. Please choose one of the available slots:\n\nThat slot was already taken! Please choose one of the available slots:",
             'reply_markup': {"inline_keyboard": keyboard}
         }
-        response = requests.post(f'{api_url}/sendMessage', json=payload)
+        response = requests.post(sendMessage_url, json=payload)
         table.put_item(
             Item={
                 'id': str(chat_id),
@@ -276,7 +296,7 @@ def ask_to_cancel_appointment(chat_id, appointment_id):
         'text': f"You already have a scheduled appointment at {appointment_times}. What would you like to do:",
         'reply_markup': {"inline_keyboard": keyboard}
     }
-    response = requests.post(f'{api_url}/sendMessage', json=payload)
+    response = requests.post(sendMessage_url, json=payload)
         
 def schedule_appointment(chat_id, appointment_id, message_id): 
     # get the chosen slot
