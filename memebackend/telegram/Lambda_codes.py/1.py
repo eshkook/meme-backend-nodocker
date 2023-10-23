@@ -175,10 +175,10 @@ def lambda_handler(event, context):
                     Key={
                         'id': appointment_id,
                     },
-                    UpdateExpression="SET is_available = :true, ",
+                    UpdateExpression="SET is_available = :true",
                     ExpressionAttributeValues={':true': True}
                 )
-
+                
                 # Update the chat_id:
                 table.update_item(
                     Key={
