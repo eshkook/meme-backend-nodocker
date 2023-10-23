@@ -33,7 +33,6 @@ def lambda_handler(event, context):
             )
             item = item.get('Item')
             appointment_id = item.get('appointment_id') if item else None
-            print("appointment_id", appointment_id)
             if user_message == '/start':
                 
                 if appointment_id: # then the user already has an appointment scheduled
@@ -69,7 +68,7 @@ def lambda_handler(event, context):
                 payload = {
                     'chat_id': str(chat_id),
                     'message_id': int(message_id),
-                    'text': f"You already have a scheduled appointment at {appointment_times}. What would you like to do:\n\nYou selected: Keep the appointment. See you soon!",
+                    'text': f"You already have a scheduled appointment at {appointment_times}. What would you like to do:\n\nYou selected: Keep the appointment.\n\nSee you soon!",
                 }
                 response = requests.post(edit_url, json=payload)
 
@@ -90,7 +89,7 @@ def lambda_handler(event, context):
                 payload = {
                     'chat_id': str(chat_id),
                     'message_id': int(message_id),
-                    'text': f"You already have a scheduled appointment at {appointment_times}. What would you like to do:\n\nYou selected: Cancel the appointment. Have a great day!",
+                    'text': f"You already have a scheduled appointment at {appointment_times}. What would you like to do:\n\nYou selected: Cancel the appointment.\n\nHave a great day!",
                 }
                 response = requests.post(edit_url, json=payload)
 
@@ -265,7 +264,8 @@ def ask_to_cancel_appointment(chat_id, appointment_id):
         Key={'id': appointment_id}
     )
     item = item.get('Item')
-    appointment_times = item[appointment_id]
+    appointment_times = item["appointment_times"]
+    print("appointment_times:", appointment_times)
     keyboard = [
                     [{"text": "Keep the appointment", "callback_data": 'keep'}],
                     [{"text": "Cancel the appointment", "callback_data": 'cancel'}],
