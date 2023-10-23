@@ -48,6 +48,9 @@ def lambda_handler(event, context):
                     'text': f"You already have a scheduled appointment at {appointment_times}. What would you like to do:\n\nYou didn't select any option.",
                 }
                 response = requests.post(edit_url, json=payload)
+                print(888888888888888)
+                print(response.json())
+                print(8888888888888888)
 
                 ask_to_cancel_appointment(chat_id, appointment_id)
                 table.update_item(
@@ -285,10 +288,10 @@ def collapse_unused_slots(chat_id):
                 Key={'id': str(chat_id)}
             )
     item = item.get('Item')
-    message_id = item["message_id"]
+    old_message_id = item["message_id"]
     payload = {
         'chat_id': str(chat_id),
-        'message_id': int(message_id),
+        'message_id': int(old_message_id),
         'text': "Hello! Let's schedule an appointment. Please choose one of the available slots:\n\nYou didn't pick a slot.",
     }
     response = requests.post(edit_url, json=payload)
