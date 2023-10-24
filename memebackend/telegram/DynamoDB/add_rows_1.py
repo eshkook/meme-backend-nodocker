@@ -1,6 +1,6 @@
 import boto3
 from datetime import datetime, timedelta
-import pytz
+import dateutil.tz
 
 table_name = "botox_3_table"
 region_name = 'eu-west-1'
@@ -14,7 +14,7 @@ table = dynamodb.Table(table_name)
 
 def create_appointments():
     slots_list = []
-    israel_tz = pytz.timezone('Asia/Jerusalem')
+    israel_tz = dateutil.tz.gettz('Asia/Jerusalem')
     now_datetime = datetime.now(israel_tz)
     today_at_9_datetime = now_datetime.replace(hour=9, minute=0, second=0, microsecond=0)
     for work_hours in range(12): ###################################### 12->9

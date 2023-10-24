@@ -1,4 +1,5 @@
 from datetime import datetime, timedelta
+import dateutil.tz
 
 # Get today's date
 today_str = datetime.now().strftime("%Y-%m-%d")
@@ -47,8 +48,10 @@ print(
     (datetime.strptime(slots_list[4], "%Y-%m-%d %H%M")- datetime.strptime(slots_list[6], "%Y-%m-%d %H%M")).total_seconds()
 )
 
-
-
 # Get today's date
 today_str = datetime.now().strftime("%Y-%m-%d %H:%M")
 print("today_str:  ", today_str)
+
+israel_tz = dateutil.tz.gettz('Asia/Jerusalem')
+now_datetime = datetime.now(israel_tz).strftime("%Y-%m-%d %H:%M")
+print("now_datetime:  ", now_datetime)
