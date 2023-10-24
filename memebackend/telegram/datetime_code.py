@@ -18,15 +18,23 @@ diff_hours = diff_seconds / 3600
 
 print("diff_hours:   ", diff_hours)
 
+slots_list = []
 
 now_datetime = datetime.now()
 today_at_9_datetime = now_datetime.replace(hour=9, minute=0, second=0, microsecond=0)
 print("today_at_9_datetime:    ", today_at_9_datetime)
-slots_list = []
-# slots_list += [for work_hours in range(9) if ]
+
 for work_hours in range(9):
     potential_slot_datetime = today_at_9_datetime + timedelta(hours=work_hours)
     if now_datetime < potential_slot_datetime:
         slots_list.append(potential_slot_datetime.strftime('%Y-%m-%d %H%M'))
 
-print("slots_list:    ", slots_list)        
+print("slots_list:    ", slots_list)
+
+tomorrow_at_9_datetime = today_at_9_datetime + timedelta(days=1)
+print("tomorrow_at_9_datetime:    ", tomorrow_at_9_datetime)
+
+for work_hours in range(9):
+    slots_list.append((tomorrow_at_9_datetime + timedelta(hours=work_hours)).strftime('%Y-%m-%d %H%M'))
+
+print("full_slots_list:    ", slots_list)

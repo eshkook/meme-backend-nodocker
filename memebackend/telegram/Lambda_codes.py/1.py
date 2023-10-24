@@ -3,7 +3,7 @@ import json
 import requests
 import traceback  
 from boto3.dynamodb.conditions import Key
-from datetime import datetime
+from datetime import datetime, timedelta
 
 # AWS DynamoDB setup
 region_name = 'eu-west-1'
@@ -221,7 +221,7 @@ def send_available_slots(chat_id):
         table.put_item(
             Item={
                 'id': str(chat_id),
-                'timestamp'
+                'timestamp': datetime.now().strftime('%Y-%m-%d'),
                 'message_id': str(sent_message_id),
                 'appointment_id': None,
                 'canceling_options_message_id': None 
