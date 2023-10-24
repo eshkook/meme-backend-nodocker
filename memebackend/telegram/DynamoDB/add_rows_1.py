@@ -11,40 +11,29 @@ dynamodb = session.resource('dynamodb')
 # Initialize DynamoDB Resource
 table = dynamodb.Table(table_name)
 
-def create_appointments(date):
-    # Define appointment times
-    appointment_times = [(datetime.strptime(f"{date} {hour:02d}:00", '%Y-%m-%d %H:%M')).strftime('%Y-%m-%d %H:%M') 
-                         for hour in range(9, 18)]
-    
-    with table.batch_writer() as batch:
-        for index, time in enumerate(appointment_times):
-            appointment_id = f"{date.replace('-', '')}{time.replace(':', '')}"
-            appointment_time_range = f"{time}- {(datetime.strptime(time, '%Y-%m-%d %H:%M') + timedelta(hours=1)).strftime('%H:%M')}"
-            if index>-6:
-                batch.put_item(
-                    Item={
-                        'id': appointment_id,
-                        # 'timestamp': time,
-                        'is_available': True,
-                        'chat_id': None,
-                        'appointment_times': appointment_time_range
-                    }
-                )
-            else:
-                batch.put_item(
-                    Item={
-                        'id': appointment_id,
-                        # 'timestamp': time,
-                        'is_available': False,
-                        'user_cell_number': None,
-                        'user_full_name': None,
-                        'appointment_times': appointment_time_range
-                    }
-                )    
+def create_appointments():
+    slots_list = []
+    now_datetime = datetime.now()
+    today_at_9_datetime = now_datetime.replace(hour=9, minute=0, second=0, microsecond=0)
+    for work_hours in range(9):
+        potential_slot_datetime = today_at_9_datetime + timedelta(hours=work_hours)
+        if now_datetime < potential_slot_datetime:
+            slots_list.append(potential_slot_datetime)
 
-# Get today's date
-today = datetime.now()
+    tomorrow_at_9_datetime = today_at_9_datetime + timedelta(days=1)
+    for work_hours in range(9):
+        slots_list.append(tomorrow_at_9_datetime + timedelta(hours=work_hours))
 
-# Insert appointments for the next day
-appointment_date = (today + timedelta(days=1)).strftime('%Y-%m-%d')
-create_appointments(appointment_date)
+    for slot in slots_list:
+
+        table.put_item(
+            Item={
+                'id': slot.strftime('%Y-%m-%d %H%M'),
+                'timestamp': datetime.now().strftime('%Y-%m-%d %H%M'),
+                'is_available': True,
+                'chat_id': None,
+                'appointment_times': slot.strftime('%Y-%m-%d %H%M') + ' - ' + (slot + timedelta(hours=1)).strftime('%H%M')
+            }
+        )    
+
+create_appointments()
