@@ -16,6 +16,7 @@ telegram_token = '6467965504:AAHoFv-gir5CNKY8ZJvD-oaj0yYwseuTMmg'
 api_url = f'https://api.telegram.org/bot{telegram_token}'
 sendMessage_url = f'{api_url}/sendMessage'
 edit_url = f'{api_url}/editMessageText'
+delete_url = f'{api_url}/deleteMessage'
 
 def lambda_handler(event, context):
     try:
@@ -48,31 +49,14 @@ def lambda_handler(event, context):
                     'text': f"You already have a scheduled appointment at {appointment_times}. What would you like to do:\n\nYou didn't select any option.",
                 }
                 response = requests.post(edit_url, json=payload)
-                print(888888888888888)
-                print(response.json())
-                print(8888888888888888)
 
                 ask_to_cancel_appointment(chat_id, appointment_id)
-                table.update_item(
-                Key={
-                    'id': str(chat_id),
-                    },
-                    UpdateExpression="SET canceling_options_message_id = :canceling_options_message_id",
-                    ExpressionAttributeValues={':canceling_options_message_id': str(message_id)}
-                )
 
             else:    
                 # check if the user already has an appointment:
                 appointment_id = item.get('appointment_id') if item else None                
                 if appointment_id: # then the user already has an appointment scheduled
                     ask_to_cancel_appointment(chat_id, appointment_id)
-                    table.update_item(
-                    Key={
-                        'id': str(chat_id),
-                        },
-                        UpdateExpression="SET canceling_options_message_id = :canceling_options_message_id",
-                        ExpressionAttributeValues={':canceling_options_message_id': str(message_id)}
-                    )
                 else:
                     if item and item['message_id']:
                         collapse_unused_slots(chat_id)
@@ -241,10 +225,12 @@ def send_available_slots(chat_id, message_id):
             'reply_markup': {"inline_keyboard": keyboard}
         }
         response = requests.post(sendMessage_url, json=payload)
+        response_dict = response.json()
+        sent_message_id = response_dict['result']['message_id']
         table.put_item(
             Item={
                 'id': str(chat_id),
-                'message_id': str(message_id),
+                'message_id': str(sent_message_id),
                 'appointment_id': None,
                 'canceling_options_message_id': None 
             }
@@ -267,10 +253,12 @@ def send_available_slots_again(chat_id, message_id):
             'reply_markup': {"inline_keyboard": keyboard}
         }
         response = requests.post(sendMessage_url, json=payload)
+        response_dict = response.json()
+        sent_message_id = response_dict['result']['message_id']
         table.put_item(
             Item={
                 'id': str(chat_id),
-                'message_id': str(message_id),
+                'message_id': str(sent_message_id),
                 'appointment_id': None,
                 'canceling_options_message_id': None 
             }
@@ -317,6 +305,15 @@ def ask_to_cancel_appointment(chat_id, appointment_id):
         'reply_markup': {"inline_keyboard": keyboard}
     }
     response = requests.post(sendMessage_url, json=payload)
+    response_dict = response.json()
+    sent_message_id = response_dict['result']['message_id']
+    table.update_item(
+    Key={
+        'id': str(chat_id),
+        },
+        UpdateExpression="SET canceling_options_message_id = :canceling_options_message_id",
+        ExpressionAttributeValues={':canceling_options_message_id': str(sent_message_id)}
+    )
         
 def schedule_appointment(chat_id, appointment_id, message_id): 
     # get the chosen slot
