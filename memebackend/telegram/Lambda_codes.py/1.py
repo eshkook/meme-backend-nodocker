@@ -3,7 +3,7 @@ import json
 import requests
 import traceback  
 from boto3.dynamodb.conditions import Key
-import decimal
+from datetime import datetime
 
 # AWS DynamoDB setup
 region_name = 'eu-west-1'
@@ -143,19 +143,27 @@ def lambda_handler(event, context):
                         'id': str(chat_id)
                     }
                 )
-
             elif query_data == 'reschedule':
                 # check when is the appointment:
                 item = table.get_item(
                     Key={'id': str(chat_id)}
                 )
                 item = item.get('Item')
+                old_message_id = item["canceling_options_message_id"]
                 appointment_id = item.get('appointment_id')
                 item = table.get_item(
                     Key={'id': appointment_id}
                 )
                 item = item.get('Item')
                 appointment_times = item.get('appointment_times')
+
+                # edit the earlier message
+                payload = {
+                    'chat_id': str(chat_id),
+                    'message_id': int(old_message_id),
+                    'text': f"You already have a scheduled appointment at {appointment_times}. What would you like to do:\n\nYou selected: Reschedule the appointment.",
+                }
+                response = requests.post(edit_url, json=payload)
 
                 # Update the selected slot to mark it as available:
                 table.update_item(
@@ -176,20 +184,6 @@ def lambda_handler(event, context):
                                                ':none': None,
                                               }
                 )
-
-                # edit the earlier message
-                item = table.get_item(
-                    Key={'id': str(chat_id)}
-                )
-                old_message_id = item["canceling_options_message_id"]
-                payload = {
-                    'chat_id': str(chat_id),
-                    'message_id': int(old_message_id),
-                    'text': f"You already have a scheduled appointment at {appointment_times}. What would you like to do:\n\nYou selected: Reschedule the appointment.",
-                    
-                }
-                response = requests.post(edit_url, json=payload)
-
                 send_available_slots(chat_id)
 
             else:  # then the callback data is the appointment ID 
@@ -227,6 +221,7 @@ def send_available_slots(chat_id):
         table.put_item(
             Item={
                 'id': str(chat_id),
+                'timestamp'
                 'message_id': str(sent_message_id),
                 'appointment_id': None,
                 'canceling_options_message_id': None 
@@ -252,13 +247,12 @@ def send_available_slots_again(chat_id, message_id):
         response = requests.post(sendMessage_url, json=payload)
         response_dict = response.json()
         sent_message_id = response_dict['result']['message_id']
-        table.put_item(
-            Item={
+        table.update_item(
+            Key={
                 'id': str(chat_id),
-                'message_id': str(sent_message_id),
-                'appointment_id': None,
-                'canceling_options_message_id': None 
-            }
+            },
+            UpdateExpression="SET message_id = :sent_message_id",
+            ExpressionAttributeValues={':sent_message_id': str(sent_message_id)}
         )
     else:
         payload = {
@@ -280,9 +274,6 @@ def collapse_unused_slots(chat_id):
         'text': "Hello! Let's schedule an appointment. Please choose one of the available slots:\n\nYou didn't pick a slot.",
     }
     response = requests.post(edit_url, json=payload)
-    print(99999999999999)
-    print(response.json())
-    print(99999999999999)
      
 def ask_to_cancel_appointment(chat_id, appointment_id):
     item = table.get_item(
