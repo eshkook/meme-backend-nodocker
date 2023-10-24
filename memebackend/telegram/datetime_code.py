@@ -16,12 +16,12 @@ diff_seconds = abs((appointment_date - today_datetime).total_seconds())
 # Convert seconds to hours
 diff_hours = diff_seconds / 3600
 
-print(diff_hours<87)
+print("diff_hours:   ", diff_hours)
 
 
 now_datetime = datetime.now()
 today_at_9_datetime = now_datetime.replace(hour=9, minute=0, second=0, microsecond=0)
-print(today_at_9_datetime)
+print("today_at_9_datetime:    ", today_at_9_datetime)
 slots_list = []
 # slots_list += [for work_hours in range(9) if ]
 for work_hours in range(9):
@@ -29,4 +29,4 @@ for work_hours in range(9):
     if now_datetime < potential_slot_datetime:
         slots_list.append(potential_slot_datetime.strftime('%Y-%m-%d %H%M'))
 
-print(slots_list)        
+print("slots_list:    ", slots_list)        
