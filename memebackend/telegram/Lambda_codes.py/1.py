@@ -61,7 +61,7 @@ def lambda_handler(event, context):
                     if item and item['message_id']:
                         collapse_unused_slots(chat_id)
 
-                    send_available_slots(chat_id, message_id)
+                    send_available_slots(chat_id)
                 
         elif 'callback_query' in body:
             chat_id = body['callback_query']['message']['chat']['id']
@@ -178,22 +178,19 @@ def lambda_handler(event, context):
                 )
 
                 # edit the earlier message
-                available_slots = fetch_available_slots()
+                item = table.get_item(
+                    Key={'id': str(chat_id)}
+                )
+                old_message_id = item["canceling_options_message_id"]
                 payload = {
                     'chat_id': str(chat_id),
-                    'message_id': int(message_id),
+                    'message_id': int(old_message_id),
                     'text': f"You already have a scheduled appointment at {appointment_times}. What would you like to do:\n\nYou selected: Reschedule the appointment.",
                     
                 }
                 response = requests.post(edit_url, json=payload)
 
-                keyboard = [[{"text": slot['appointment_times'], "callback_data": slot['id']}] for slot in available_slots]
-                payload = {
-                    'chat_id': str(chat_id),
-                    'text': f"Hellow! Let's schedule an appointment. Please choose one of the available slots:",
-                    'reply_markup': {"inline_keyboard": keyboard}
-                }
-                response = requests.post(sendMessage_url, json=payload)
+                send_available_slots(chat_id)
 
             else:  # then the callback data is the appointment ID 
                 appointment_id = query_data  
@@ -214,7 +211,7 @@ def fetch_available_slots():
     sorted_slots = sorted(available_slots, key=lambda x: x['appointment_times'])
     return sorted_slots
 
-def send_available_slots(chat_id, message_id):
+def send_available_slots(chat_id):
     available_slots = fetch_available_slots()
     if available_slots:
         keyboard = [[{"text": slot['appointment_times'], "callback_data": slot['id']}] for slot in available_slots]
