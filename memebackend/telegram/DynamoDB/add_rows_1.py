@@ -28,11 +28,10 @@ def create_appointments():
 
         table.put_item(
             Item={
-                'id': slot.strftime('%Y-%m-%d %H%M'),
-                'timestamp': datetime.now().strftime('%Y-%m-%d %H%M'),
+                'id': slot.strftime('%Y-%m-%d %H:%M'),
                 'is_available': True,
                 'chat_id': None,
-                'appointment_times': slot.strftime('%Y-%m-%d %H%M') + ' - ' + (slot + timedelta(hours=1)).strftime('%H%M')
+                'appointment_times': slot.strftime('%Y-%m-%d %H:%M') + '-' + (slot + timedelta(hours=1)).strftime('%H:%M')
             }
         )    
 
