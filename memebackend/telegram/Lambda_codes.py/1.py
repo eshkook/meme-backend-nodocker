@@ -4,6 +4,7 @@ import requests
 import traceback  
 from boto3.dynamodb.conditions import Key
 from datetime import datetime, timedelta
+import pytz
 
 # AWS DynamoDB setup
 region_name = 'eu-west-1'
@@ -222,10 +223,11 @@ def send_available_slots(chat_id):
         response = requests.post(sendMessage_url, json=payload)
         response_dict = response.json()
         sent_message_id = response_dict['result']['message_id']
+        israel_tz = pytz.timezone('Asia/Jerusalem')
         table.put_item(
             Item={
                 'id': str(chat_id),
-                'timestamp': datetime.now().strftime("%Y-%m-%d %H:%M"),
+                'timestamp': datetime.now(israel_tz).strftime("%Y-%m-%d %H:%M"),
                 'message_id': str(sent_message_id),
                 'appointment_id': None,
                 'canceling_options_message_id': None 
