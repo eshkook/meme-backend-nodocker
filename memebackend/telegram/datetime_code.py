@@ -2,7 +2,7 @@ from datetime import datetime, timedelta
 
 # Get today's date
 today_str = datetime.now().strftime("%Y-%m-%d")
-print("today:  ", today_str)
+print("today_str:  ", today_str)
 
 today_datetime = datetime.strptime(today_str, "%Y-%m-%d")
 print("today_datetime:  ", today_datetime)
@@ -46,3 +46,9 @@ print(type(datetime.strptime(slots_list[0], "%Y-%m-%d %H%M")))
 print(
     (datetime.strptime(slots_list[4], "%Y-%m-%d %H%M")- datetime.strptime(slots_list[6], "%Y-%m-%d %H%M")).total_seconds()
 )
+
+
+
+# Get today's date
+today_str = datetime.now().strftime("%Y-%m-%d %H:%M")
+print("today_str:  ", today_str)

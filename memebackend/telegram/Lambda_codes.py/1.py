@@ -225,7 +225,7 @@ def send_available_slots(chat_id):
         table.put_item(
             Item={
                 'id': str(chat_id),
-                'timestamp': datetime.now().strftime('%Y-%m-%d %H:%M'),
+                'timestamp': datetime.now().strftime("%Y-%m-%d %H:%M"),
                 'message_id': str(sent_message_id),
                 'appointment_id': None,
                 'canceling_options_message_id': None 
