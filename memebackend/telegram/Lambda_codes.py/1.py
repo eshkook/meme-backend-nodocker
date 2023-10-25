@@ -68,7 +68,6 @@ def handle_cloudwatch_event(event): # call every round hour between 8:00-17:00 i
     # but what if they dragged the chat until now? changes timstamp of chat to the lsat time they acted    
     
 def handle_telegram_event(event):
-    # try:
     body = json.loads(event['body'])
     chat_id = None
     query_data = None
@@ -251,12 +250,6 @@ def handle_telegram_event(event):
             appointment_id = query_data  
             message_id = body['callback_query']['message']['message_id']
             schedule_appointment(chat_id, appointment_id, message_id)
-    
-    # return {"statusCode": 200}
-    # except Exception as e:
-    #     print(f"An error occurred: {e}")
-    #     traceback.print_exc()  # New logging statement to print the stack trace
-    #     return {"statusCode": 200}
         
 def fetch_available_slots():
     response = table.scan(
@@ -383,9 +376,10 @@ def schedule_appointment(chat_id, appointment_id, message_id):
         response = requests.post(edit_url, json=payload)
 
         chat_item = table.get_item(
-            Key={'id': str(appointment_id)}
+            Key={'id': str(chat_id)}
         )
         chat_item = chat_item.get('Item')
+
         table.update_item(
             Key={
                 'id': appointment_id,
@@ -395,7 +389,7 @@ def schedule_appointment(chat_id, appointment_id, message_id):
                 ':false': False,
                 ':chat_id': str(chat_id),
                 ':username': chat_item['username'],
-                ':full_name': chat_item['full_name'],  
+                ':full_name': chat_item['full_name']
             }
         )
         table.update_item(
