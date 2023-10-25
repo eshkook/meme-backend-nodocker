@@ -3,7 +3,7 @@ import json
 import requests
 import traceback  
 from boto3.dynamodb.conditions import Key
-from datetime import datetime, timedelta
+from datetime import datetime
 import dateutil.tz
 
 # AWS DynamoDB setup
@@ -11,6 +11,7 @@ region_name = 'eu-west-1'
 table_name = 'botox_3_table'
 dynamodb = boto3.resource('dynamodb', region_name=region_name)
 table = dynamodb.Table(table_name)
+israel_tz = dateutil.tz.gettz('Asia/Jerusalem')
 
 # Telegram setup
 telegram_token = '6467965504:AAHoFv-gir5CNKY8ZJvD-oaj0yYwseuTMmg'
@@ -52,7 +53,7 @@ def lambda_handler(event, context):
                 response = requests.post(edit_url, json=payload)
 
                 # check if we allow canceling (if there is more than 1 hour until appointment)
-                if (datetime.strptime(appointment_id, '%Y-%m-%d %H:%M')-datetime.now()).total_seconds() > 3600:
+                if (datetime.strptime(appointment_id, '%Y-%m-%d %H:%M').replace(tzinfo=israel_tz) - datetime.now(israel_tz)).total_seconds() > 3600: 
                     ask_to_cancel_appointment(chat_id, appointment_id)
                 else:
                     too_late_to_cancel_appointment(chat_id, appointment_id) 
@@ -62,7 +63,7 @@ def lambda_handler(event, context):
                 appointment_id = item.get('appointment_id') if item else None                
                 if appointment_id: # then the user already has an appointment scheduled
                     # check if we allow canceling (if there is more than 1 hour until appointment)
-                    if (datetime.strptime(appointment_id, '%Y-%m-%d %H:%M')-datetime.now()).total_seconds() > 3600:
+                    if (datetime.strptime(appointment_id, '%Y-%m-%d %H:%M').replace(tzinfo=israel_tz) - datetime.now(israel_tz)).total_seconds() > 3600:
                         ask_to_cancel_appointment(chat_id, appointment_id)
                     else:
                         too_late_to_cancel_appointment(chat_id, appointment_id)    
@@ -76,26 +77,21 @@ def lambda_handler(event, context):
             chat_id = body['callback_query']['message']['chat']['id']
             query_data = body['callback_query']['data']
             message_id = body['callback_query']['message']['message_id']
-
             # check when is the appointment:
             item = table.get_item(
                 Key={'id': str(chat_id)}
             )
             item = item.get('Item')
             appointment_id = item.get('appointment_id')
-            item = table.get_item(
-                Key={'id': appointment_id}
-            )
-            item = item.get('Item')
-            appointment_times = item.get('appointment_times')
+
+            if appointment_id:
+                item = table.get_item( # this function raise error if id doesn't exist
+                    Key={'id': appointment_id}
+                )
+                item = item.get('Item')
+                appointment_times = item.get('appointment_times')
 
             if query_data == 'keep':
-                # check when is the appointment:
-                # item = table.get_item(
-                #     Key={'id': str(chat_id)}
-                # )
-                # item = item.get('Item')
-                # appointment_id = item.get('appointment_id')
                 item = table.get_item(
                     Key={'id': appointment_id}
                 )
@@ -132,7 +128,7 @@ def lambda_handler(event, context):
                 response = requests.post(edit_url, json=payload)
 
                 # check if we allow canceling (if there is more than 1 hour until appointment)
-                if (datetime.strptime(appointment_id, '%Y-%m-%d %H:%M')-datetime.now()).total_seconds() > 3600:
+                if (datetime.strptime(appointment_id, '%Y-%m-%d %H:%M').replace(tzinfo=israel_tz) - datetime.now(israel_tz)).total_seconds() > 3600:
                     payload = {
                         'chat_id': str(chat_id),
                         'text': f"Your appointment has been canceled. Have a great day!",
@@ -155,19 +151,19 @@ def lambda_handler(event, context):
                         }
                     )
                 else:
-                    too_late_to_cancel_appontment(chat_id, appointment_times)
+                    too_late_to_cancel_appointment(chat_id, appointment_times)
 
             elif query_data == 'reschedule':
                 # edit the earlier message
                 payload = {
                     'chat_id': str(chat_id),
-                    'message_id': int(old_message_id),
+                    'message_id': int(message_id),
                     'text': f"You already have a scheduled appointment at {appointment_times}. What would you like to do:\n\nYou selected: Reschedule the appointment.",
                 }
                 response = requests.post(edit_url, json=payload)
 
                 # check if we allow canceling (if there is more than 1 hour until appointment)
-                if (datetime.strptime(appointment_id, '%Y-%m-%d %H:%M')-datetime.now()).total_seconds() > 3600:
+                if (datetime.strptime(appointment_id, '%Y-%m-%d %H:%M').replace(tzinfo=israel_tz) - datetime.now(israel_tz)).total_seconds() > 3600:
                     # Update the selected slot to mark it as available:
                     table.update_item(
                         Key={
@@ -189,7 +185,7 @@ def lambda_handler(event, context):
                     )
                     send_available_slots(chat_id)
                 else:
-                    too_late_to_cancel_appontment(chat_id, appointment_times)    
+                    too_late_to_cancel_appointment(chat_id, appointment_times)    
 
             else:  # then the callback data is the appointment ID 
                 appointment_id = query_data  
@@ -223,7 +219,6 @@ def send_available_slots(chat_id):
         response = requests.post(sendMessage_url, json=payload)
         response_dict = response.json()
         sent_message_id = response_dict['result']['message_id']
-        israel_tz = dateutil.tz.gettz('Asia/Jerusalem')
         table.put_item(
             Item={
                 'id': str(chat_id),
@@ -287,7 +282,6 @@ def ask_to_cancel_appointment(chat_id, appointment_id):
     )
     item = item.get('Item')
     appointment_times = item["appointment_times"]
-    print("appointment_times:", appointment_times)
     keyboard = [
                     [{"text": "Keep the appointment", "callback_data": 'keep'}],
                     [{"text": "Cancel the appointment", "callback_data": 'cancel'}],
@@ -315,7 +309,6 @@ def schedule_appointment(chat_id, appointment_id, message_id):
         Key={'id': str(appointment_id)}
     )
     item = item.get('Item')
-
     if item["is_available"]:
         response_text = f"You selected: {item['appointment_times']}. See you soon!"
         new_message_text = f"Hello! Let's schedule an appointment. Please choose one of the available slots:\n\n{response_text}"
@@ -326,7 +319,6 @@ def schedule_appointment(chat_id, appointment_id, message_id):
             'text': new_message_text
         }
         response = requests.post(edit_url, json=payload)
-
         table.update_item(
             Key={
                 'id': appointment_id,
@@ -337,7 +329,6 @@ def schedule_appointment(chat_id, appointment_id, message_id):
                 ':chat_id': str(chat_id)  
             }
         )
-
         table.update_item(
             Key={
                 'id': str(chat_id),
@@ -351,7 +342,7 @@ def schedule_appointment(chat_id, appointment_id, message_id):
     else:
         send_available_slots_again(chat_id, message_id)
 
-def too_late_to_cancel_appontment(chat_id, appointment_times):
+def too_late_to_cancel_appointment(chat_id, appointment_times):
     payload = {
         'chat_id': str(chat_id),
         'text': f"It is too late to cancel or reschedule your appointment. Your appointment remains at {appointment_times}. See you soon!",

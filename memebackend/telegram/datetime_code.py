@@ -45,13 +45,15 @@ print("full_slots_list:    ", slots_list)
 print(type(datetime.strptime(slots_list[0], "%Y-%m-%d %H%M")))
 
 print(
-    (datetime.strptime(slots_list[4], "%Y-%m-%d %H%M")- datetime.strptime(slots_list[6], "%Y-%m-%d %H%M")).total_seconds()
+    (datetime.strptime(slots_list[4], "%Y-%m-%d %H%M")- datetime.strptime(slots_list[3], "%Y-%m-%d %H%M")).total_seconds()
 )
 
-# Get today's date
-today_str = datetime.now().strftime("%Y-%m-%d %H:%M")
-print("today_str:  ", today_str)
+# # Get today's date
+# today_str = datetime.now().strftime("%Y-%m-%d %H:%M")
+# print("today_str:  ", today_str)
 
 israel_tz = dateutil.tz.gettz('Asia/Jerusalem')
 now_datetime = datetime.now(israel_tz).strftime("%Y-%m-%d %H:%M")
 print("now_datetime:  ", now_datetime)
+
+a=datetime.now(israel_tz)-datetime.strptime('2023-10-25 19:00', '%Y-%m-%d %H:%M').replace(tzinfo=israel_tz)
