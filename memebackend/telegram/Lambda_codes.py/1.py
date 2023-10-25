@@ -65,7 +65,6 @@ def handle_cloudwatch_event(event): # call every round hour between 8:00-17:00 i
     # 3. add tomorrow's slots: (only at 8:00)
 
     # 4. delete 2 days old chats: (only at 17:00) 
-    # but what if they dragged the chat until now? changes timstamp of chat to the lsat time they acted    
     
 def handle_telegram_event(event):
     body = json.loads(event['body'])
@@ -107,8 +106,7 @@ def handle_telegram_event(event):
             elif (datetime.strptime(appointment_id, '%Y-%m-%d %H:%M').replace(tzinfo=israel_tz) - datetime.now(israel_tz)).total_seconds() > 3600: 
                 ask_to_cancel_appointment(chat_id, appointment_id)
             else:
-                too_late_to_cancel_appointment(chat_id, appointment_id) 
-
+                too_late_to_cancel_appointment(chat_id, appointment_id)
         else:
             if user_message == 'admin': 
                 if item and item['message_id']:
@@ -250,6 +248,21 @@ def handle_telegram_event(event):
             appointment_id = query_data  
             message_id = body['callback_query']['message']['message_id']
             schedule_appointment(chat_id, appointment_id, message_id)
+
+    # update chat's timestamp:
+    item = table.get_item(
+        Key={'id': str(chat_id)}
+    )
+    item = item.get('Item')
+    
+    if item:
+        table.update_item(
+            Key={
+                'id': str(chat_id),
+            },
+            UpdateExpression="SET recent_use_timestamp = :recent_use_timestamp",
+            ExpressionAttributeValues={':recent_use_timestamp': datetime.now(israel_tz).strftime("%Y-%m-%d %H:%M")}
+        )
         
 def fetch_available_slots():
     response = table.scan(
@@ -277,7 +290,7 @@ def send_available_slots(chat_id, username, full_name):
                 'id': str(chat_id),
                 'username': username,
                 'full_name': full_name,
-                'timestamp': datetime.now(israel_tz).strftime("%Y-%m-%d %H:%M"),
+                'recent_use_timestamp': datetime.now(israel_tz).strftime("%Y-%m-%d %H:%M"),
                 'message_id': str(sent_message_id),
                 'appointment_id': None,
                 'canceling_options_message_id': None 
@@ -310,6 +323,7 @@ def send_available_slots_again(chat_id, message_id):
             UpdateExpression="SET message_id = :sent_message_id",
             ExpressionAttributeValues={':sent_message_id': str(sent_message_id)}
         )
+
     else:
         payload = {
             'chat_id': str(chat_id),
@@ -422,7 +436,7 @@ def show_data_to_admin(chat_id):
         sorted_scheduled_slots = sorted(scheduled_slots, key=lambda x: x['appointment_times'])
         calendar_summary = "Calendar:"
         for index, scheduled_slot in enumerate(sorted_scheduled_slots):
-            calendar_summary += f"\n\n{index + 1}.\nappointment_times: {scheduled_slot['appointment_times']}\nusername: {scheduled_slot['username']}\nfull_name: {scheduled_slot['full_name']}"
+            calendar_summary += f"\n\n{index + 1}.\nAppointment times: {scheduled_slot['appointment_times']}\nUsername: {scheduled_slot['username']}\nFull name: {scheduled_slot['full_name']}"
     else:
          calendar_summary = "No scheduled appointments."       
 
