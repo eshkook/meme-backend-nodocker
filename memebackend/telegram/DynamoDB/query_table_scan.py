@@ -47,7 +47,7 @@ if scheduled_slots:
     sorted_scheduled_slots = sorted(scheduled_slots, key=lambda x: x['appointment_times'])
     calendar_summary = "Calendar:"
     for scheduled_slot in sorted_scheduled_slots:
-        calendar_summary += f"\n\nappointment_times: {scheduled_slot['appointment_times']}, chat_id: {scheduled_slot['chat_id']}"
+        calendar_summary += f"\n\nappointment_times: {scheduled_slot['appointment_times']}\nusername: {scheduled_slot['username']}\nfull_name: {scheduled_slot['full_name']}"
 else:
     calendar_summary = "No scheduled appointments."
 
