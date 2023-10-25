@@ -63,6 +63,8 @@ def lambda_handler(event, context):
 
             else:
                 if user_message == 'admin': 
+                    if item and item['message_id']:
+                        collapse_unused_slots(chat_id)
                     show_data_to_admin(chat_id)
                 else:    
                     # check if the user already has an appointment:
@@ -360,11 +362,14 @@ def show_data_to_admin(chat_id):
         FilterExpression=Attr('chat_id').ne(None)
     )
     scheduled_slots = response.get('Items', [])
-    sorted_scheduled_slots = sorted(scheduled_slots, key=lambda x: x['appointment_times'])
-
-    calendar_summary = "Calendar:"
-    for scheduled_slot in sorted_scheduled_slots:
-        calendar_summary += f"\n\nappointment_times: {scheduled_slot['appointment_times']}, chat_id: {scheduled_slot['chat_id']}"
+    
+    if scheduled_slots:
+        sorted_scheduled_slots = sorted(scheduled_slots, key=lambda x: x['appointment_times'])
+        calendar_summary = "Calendar:"
+        for scheduled_slot in sorted_scheduled_slots:
+            calendar_summary += f"\n\nappointment_times: {scheduled_slot['appointment_times']}, chat_id: {scheduled_slot['chat_id']}"
+    else:
+         calendar_summary = "No scheduled appointments."       
 
     payload = {
         'chat_id': str(chat_id),
