@@ -55,6 +55,17 @@ def handle_cloudwatch_event(event): # call every round hour between 8:00-17:00 i
     # 2. drop the outdated slot 
     if current_time.strftime("%H")>=9: 
         last_round_hour_time = current_time.replace(minute=0, second=0, microsecond=0)
+        last_round_hour_time = last_round_hour_time.strftime("%Y-%m-%d %H:%M")
+        table.delete_item(
+        Key={
+            'id': last_round_hour_time
+            }
+        )
+
+    # 3. add tomorrow's slots: (only at 8:00)
+
+    # 4. delete 2 days old chats: (only at 17:00) 
+    # but what if they dragged the chat until now? changes timstamp of chat to the lsat time they acted    
     
 def handle_telegram_event(event):
     # try:
