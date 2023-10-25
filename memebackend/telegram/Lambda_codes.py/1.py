@@ -2,9 +2,8 @@ import boto3
 import json
 import requests
 import traceback  
-from boto3.dynamodb.conditions import Key
 from boto3.dynamodb.conditions import Attr
-from datetime import datetime
+from datetime import datetime, timedelta
 import dateutil.tz
 
 # AWS DynamoDB setup
@@ -34,9 +33,29 @@ def lambda_handler(event, context):
         traceback.print_exc()
         return {"statusCode": 200}
 
-def handle_cloudwatch_event(event):
-    
+def handle_cloudwatch_event(event): # call every round hour between 8:00-17:00 inclusive
+    current_time = datetime.now(israel_tz)
 
+    # 1. sending an alert to a user about an upcomming appointment
+    if current_time.strftime("%H")<=16:
+        next_round_hour_time = current_time.replace(minute=0, second=0, microsecond=0) + timedelta(hours=1)
+        next_round_hour_time = next_round_hour_time.strftime("%Y-%m-%d %H:%M")
+        item = table.get_item(
+            Key={'id': next_round_hour_time}
+        )
+        item = item.get('Item')
+        chat_id = item.get('chat_id')
+        appointment_times = item.get('appointment_times')
+        payload = {
+            'chat_id': str(chat_id),
+            'text': f"Hi! We remind you that your appointment is at {appointment_times}. See you soon!",
+        }
+        response = requests.post(sendMessage_url, json=payload)
+
+    # 2. drop the outdated slot 
+    if current_time.strftime("%H")>=9: 
+        last_round_hour_time = current_time.replace(minute=0, second=0, microsecond=0)
+    
 def handle_telegram_event(event):
     # try:
     body = json.loads(event['body'])
@@ -397,8 +416,8 @@ def show_data_to_admin(chat_id):
     if scheduled_slots:
         sorted_scheduled_slots = sorted(scheduled_slots, key=lambda x: x['appointment_times'])
         calendar_summary = "Calendar:"
-        for scheduled_slot in sorted_scheduled_slots:
-            calendar_summary += f"\n\nappointment_times: {scheduled_slot['appointment_times']}\nusername: {scheduled_slot['username']}\nfull_name: {scheduled_slot['full_name']}"
+        for index, scheduled_slot in enumerate(sorted_scheduled_slots):
+            calendar_summary += f"\n\n{index + 1}.\nappointment_times: {scheduled_slot['appointment_times']}\nusername: {scheduled_slot['username']}\nfull_name: {scheduled_slot['full_name']}"
     else:
          calendar_summary = "No scheduled appointments."       
 

@@ -57,3 +57,9 @@ now_datetime = datetime.now(israel_tz).strftime("%Y-%m-%d %H:%M")
 print("now_datetime:  ", now_datetime)
 
 a=datetime.now(israel_tz)-datetime.strptime('2023-10-25 19:00', '%Y-%m-%d %H:%M').replace(tzinfo=israel_tz)
+
+current_time = datetime.now(israel_tz)
+next_hour_time = current_time.replace(minute=0, second=0, microsecond=0) + timedelta(hours=1)
+next_hour_time = next_hour_time.strftime("%Y-%m-%d %H:%M")
+print(next_hour_time)
+
