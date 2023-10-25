@@ -31,6 +31,9 @@ def lambda_handler(event, context):
             chat_id = body['message']['chat']['id']
             user_message = body['message'].get('text', '')
             message_id = body['message']['message_id']
+            user_info = body['message']['from']
+            username = user_info.get('username', '')
+            full_name = user_info.get('first_name', '') + " " + user_info.get('last_name', '')
 
             item = table.get_item(
                 Key={'id': str(chat_id)}
@@ -79,12 +82,13 @@ def lambda_handler(event, context):
                         if item and item['message_id']:
                             collapse_unused_slots(chat_id)
 
-                        send_available_slots(chat_id)
+                        send_available_slots(chat_id, username, full_name)
                 
         elif 'callback_query' in body:
             chat_id = body['callback_query']['message']['chat']['id']
             query_data = body['callback_query']['data']
             message_id = body['callback_query']['message']['message_id']
+
             # check when is the appointment:
             item = table.get_item(
                 Key={'id': str(chat_id)}
@@ -191,7 +195,7 @@ def lambda_handler(event, context):
                                                 ':none': None,
                                                 }
                     )
-                    send_available_slots(chat_id)
+                    send_available_slots(chat_id, username, full_name)
                 else:
                     too_late_to_cancel_appointment(chat_id, appointment_times)    
 
@@ -214,7 +218,7 @@ def fetch_available_slots():
     sorted_slots = sorted(available_slots, key=lambda x: x['appointment_times'])
     return sorted_slots
 
-def send_available_slots(chat_id):
+def send_available_slots(chat_id, username, full_name):
     available_slots = fetch_available_slots()
     if available_slots:
         keyboard = [[{"text": slot['appointment_times'], "callback_data": slot['id']}] for slot in available_slots]
@@ -230,6 +234,8 @@ def send_available_slots(chat_id):
         table.put_item(
             Item={
                 'id': str(chat_id),
+                'username': username,
+                'full_name': full_name,
                 'timestamp': datetime.now(israel_tz).strftime("%Y-%m-%d %H:%M"),
                 'message_id': str(sent_message_id),
                 'appointment_id': None,
@@ -327,14 +333,21 @@ def schedule_appointment(chat_id, appointment_id, message_id):
             'text': new_message_text
         }
         response = requests.post(edit_url, json=payload)
+
+        chat_item = table.get_item(
+            Key={'id': str(appointment_id)}
+        )
+        chat_item = chat_item.get('Item')
         table.update_item(
             Key={
                 'id': appointment_id,
             },
-            UpdateExpression="SET is_available = :false, chat_id = :chat_id",
+            UpdateExpression="SET is_available = :false, chat_id = :chat_id, username = :username, full_name = :full_name",
             ExpressionAttributeValues={
                 ':false': False,
-                ':chat_id': str(chat_id)  
+                ':chat_id': str(chat_id),
+                ':username': chat_item['username'],
+                ':full_name': chat_item['full_name'],  
             }
         )
         table.update_item(
@@ -367,7 +380,7 @@ def show_data_to_admin(chat_id):
         sorted_scheduled_slots = sorted(scheduled_slots, key=lambda x: x['appointment_times'])
         calendar_summary = "Calendar:"
         for scheduled_slot in sorted_scheduled_slots:
-            calendar_summary += f"\n\nappointment_times: {scheduled_slot['appointment_times']}, chat_id: {scheduled_slot['chat_id']}"
+            calendar_summary += f"\n\nappointment_times: {scheduled_slot['appointment_times']}\nusername: {scheduled_slot['username']}\nfull_name: {scheduled_slot['nfull_name']}"
     else:
          calendar_summary = "No scheduled appointments."       
 
