@@ -3,6 +3,7 @@ import json
 import requests
 import traceback  
 from boto3.dynamodb.conditions import Key
+from boto3.dynamodb.conditions import Attr
 from datetime import datetime
 import dateutil.tz
 
@@ -52,26 +53,31 @@ def lambda_handler(event, context):
                 }
                 response = requests.post(edit_url, json=payload)
 
+                if user_message == 'admin': 
+                    show_data_to_admin(chat_id)
                 # check if we allow canceling (if there is more than 1 hour until appointment)
-                if (datetime.strptime(appointment_id, '%Y-%m-%d %H:%M').replace(tzinfo=israel_tz) - datetime.now(israel_tz)).total_seconds() > 3600: 
+                elif (datetime.strptime(appointment_id, '%Y-%m-%d %H:%M').replace(tzinfo=israel_tz) - datetime.now(israel_tz)).total_seconds() > 3600: 
                     ask_to_cancel_appointment(chat_id, appointment_id)
                 else:
                     too_late_to_cancel_appointment(chat_id, appointment_id) 
 
-            else:    
-                # check if the user already has an appointment:
-                appointment_id = item.get('appointment_id') if item else None                
-                if appointment_id: # then the user already has an appointment scheduled
-                    # check if we allow canceling (if there is more than 1 hour until appointment)
-                    if (datetime.strptime(appointment_id, '%Y-%m-%d %H:%M').replace(tzinfo=israel_tz) - datetime.now(israel_tz)).total_seconds() > 3600:
-                        ask_to_cancel_appointment(chat_id, appointment_id)
+            else:
+                if user_message == 'admin': 
+                    show_data_to_admin(chat_id)
+                else:    
+                    # check if the user already has an appointment:
+                    appointment_id = item.get('appointment_id') if item else None                
+                    if appointment_id: # then the user already has an appointment scheduled
+                        # check if we allow canceling (if there is more than 1 hour until appointment)
+                        if (datetime.strptime(appointment_id, '%Y-%m-%d %H:%M').replace(tzinfo=israel_tz) - datetime.now(israel_tz)).total_seconds() > 3600:
+                            ask_to_cancel_appointment(chat_id, appointment_id)
+                        else:
+                            too_late_to_cancel_appointment(chat_id, appointment_id)    
                     else:
-                        too_late_to_cancel_appointment(chat_id, appointment_id)    
-                else:
-                    if item and item['message_id']:
-                        collapse_unused_slots(chat_id)
+                        if item and item['message_id']:
+                            collapse_unused_slots(chat_id)
 
-                    send_available_slots(chat_id)
+                        send_available_slots(chat_id)
                 
         elif 'callback_query' in body:
             chat_id = body['callback_query']['message']['chat']['id']
@@ -85,7 +91,7 @@ def lambda_handler(event, context):
             appointment_id = item.get('appointment_id')
 
             if appointment_id:
-                item = table.get_item( # this function raise error if id doesn't exist
+                item = table.get_item( 
                     Key={'id': appointment_id}
                 )
                 item = item.get('Item')
@@ -200,7 +206,7 @@ def lambda_handler(event, context):
         
 def fetch_available_slots():
     response = table.scan(
-        FilterExpression=Key('is_available').eq(True) # a linear time search
+        FilterExpression=Attr('is_available').eq(True) 
     )
     available_slots = response.get('Items', [])
     sorted_slots = sorted(available_slots, key=lambda x: x['appointment_times'])
@@ -242,7 +248,7 @@ def send_available_slots_again(chat_id, message_id):
         payload = {
             'chat_id': str(chat_id),
             'message_id': int(message_id),
-            'text': "Hello! Let's schedule an appointment. Please choose one of the available slots:\n\nThat slot was already taken! Please choose one of the available slots:",
+            'text': "Hello! Let's schedule an appointment. Please choose one of the available slots:\n\nThat slot was already taken or expired! Please choose one of the available slots:",
             'reply_markup': {"inline_keyboard": keyboard}
         }
         response = requests.post(sendMessage_url, json=payload)
@@ -309,7 +315,7 @@ def schedule_appointment(chat_id, appointment_id, message_id):
         Key={'id': str(appointment_id)}
     )
     item = item.get('Item')
-    if item["is_available"]:
+    if item.get("is_available"): # also captures the check of expired adtes, asin in that case it is None
         response_text = f"You selected: {item['appointment_times']}. See you soon!"
         new_message_text = f"Hello! Let's schedule an appointment. Please choose one of the available slots:\n\n{response_text}"
         
@@ -348,3 +354,22 @@ def too_late_to_cancel_appointment(chat_id, appointment_times):
         'text': f"It is too late to cancel or reschedule your appointment. Your appointment remains at {appointment_times}. See you soon!",
     }
     response = requests.post(sendMessage_url, json=payload)        
+
+def show_data_to_admin(chat_id):
+    response = table.scan(
+        FilterExpression=Attr('chat_id').ne(None)
+    )
+    scheduled_slots = response.get('Items', [])
+    sorted_scheduled_slots = sorted(scheduled_slots, key=lambda x: x['appointment_times'])
+
+    calendar_summary = "Calendar:"
+    for scheduled_slot in sorted_scheduled_slots:
+        calendar_summary += f"\n\nappointment_times: {scheduled_slot['appointment_times']}, chat_id: {scheduled_slot['chat_id']}"
+
+    payload = {
+        'chat_id': str(chat_id),
+        'text': calendar_summary,
+    }
+    response = requests.post(sendMessage_url, json=payload)     
+
+
