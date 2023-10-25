@@ -359,7 +359,7 @@ def too_late_to_cancel_appointment(chat_id, appointment_times):
 
 def show_data_to_admin(chat_id):
     response = table.scan(
-        FilterExpression=Attr('chat_id').ne(None)
+        FilterExpression=Attr('chat_id').exists() & Attr('chat_id').ne(None)
     )
     scheduled_slots = response.get('Items', [])
     
