@@ -37,7 +37,7 @@ def handle_cloudwatch_event(event): # call every round hour between 8:00-17:00 i
     current_time = datetime.now(israel_tz)
 
     # 1. sending an alert to a user about an upcomming appointment
-    if current_time.strftime("%H")<=16:
+    if current_time.strftime("%H") <= 16:
         next_round_hour_time = current_time.replace(minute=0, second=0, microsecond=0) + timedelta(hours=1)
         next_round_hour_time = next_round_hour_time.strftime("%Y-%m-%d %H:%M")
         item = table.get_item(
@@ -53,7 +53,7 @@ def handle_cloudwatch_event(event): # call every round hour between 8:00-17:00 i
         response = requests.post(sendMessage_url, json=payload)
 
     # 2. drop the outdated slot 
-    if current_time.strftime("%H")>=9: 
+    if current_time.strftime("%H") >= 9: 
         last_round_hour_time = current_time.replace(minute=0, second=0, microsecond=0)
         last_round_hour_time = last_round_hour_time.strftime("%Y-%m-%d %H:%M")
         table.delete_item(
@@ -63,9 +63,51 @@ def handle_cloudwatch_event(event): # call every round hour between 8:00-17:00 i
         )
 
     # 3. add tomorrow's slots: (only at 8:00)
+    if current_time.strftime("%H") == 9:
+        today_at_9_datetime = current_time.replace(hour=9, minute=0, second=0, microsecond=0) 
+        tomorrow_at_9_datetime = today_at_9_datetime + timedelta(days=1)
+        slots_list = [tomorrow_at_9_datetime + timedelta(hours=work_hours) for work_hours in range(9)]
+        for slot in slots_list:
+            table.put_item(
+                Item={
+                    'id': slot.strftime('%Y-%m-%d %H:%M'),
+                    'is_available': True,
+                    'chat_id': None,
+                    'username': None,
+                    'full_name': None,
+                    'appointment_times': slot.strftime('%Y-%m-%d %H:%M') + '-' + (slot + timedelta(hours=1)).strftime('%H:%M')
+                }
+            )  
 
     # 4. delete 2 days old chats: (only at 17:00) 
-    
+    if current_time.strftime("%H") == 17:
+        two_days_ago_time_str = (current_time - timedelta(days=2)).strftime('%Y-%m-%d %H:%M')
+        delete_items(two_days_ago_time_str)
+
+def delete_items(two_days_ago_time_str):
+    # Initial scan
+    response = table.scan(
+        FilterExpression=Attr('recent_use_timestamp').lt(two_days_ago_time_str)
+    )
+    delete_items_from_response(response)
+
+    # Continue scanning and deleting until all pages have been processed
+    while 'LastEvaluatedKey' in response:
+        response = table.scan(
+            FilterExpression=Attr('recent_use_timestamp').lt(two_days_ago_time_str),
+            ExclusiveStartKey=response['LastEvaluatedKey']
+        )
+        delete_items_from_response(response)
+
+def delete_items_from_response(response):
+    for item in response['Items']:
+        print(f"Deleting item {item}")
+        table.delete_item(
+            Key={
+                'id': item['id'],
+            }
+        )    
+
 def handle_telegram_event(event):
     body = json.loads(event['body'])
     chat_id = None

@@ -63,4 +63,3 @@ next_hour_time = current_time.replace(minute=0, second=0, microsecond=0) + timed
 next_hour_time = next_hour_time.strftime("%Y-%m-%d %H:%M")
 print(next_hour_time)
 
-
