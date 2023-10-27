@@ -62,11 +62,11 @@ def handle_cloudwatch_event(event): # call every round hour between 8:00-17:00 i
             }
         )
 
-    # 3. add tomorrow's slots: (only at 8:00)
-    if current_time.strftime("%H") == 9:
-        today_at_9_datetime = current_time.replace(hour=9, minute=0, second=0, microsecond=0) 
-        tomorrow_at_9_datetime = today_at_9_datetime + timedelta(days=1)
-        slots_list = [tomorrow_at_9_datetime + timedelta(hours=work_hours) for work_hours in range(9)]
+    # 3. add next day's slots: (only at 8:00)
+    if current_time.strftime('%A') != "Thursday" and current_time.strftime("%H") == 8:
+        today_at_8_datetime = current_time.replace(hour=8, minute=0, second=0, microsecond=0) 
+        tomorrow_at_8_datetime = today_at_8_datetime + timedelta(days=1)
+        slots_list = [tomorrow_at_8_datetime + timedelta(hours=work_hours+1) for work_hours in range(9)]
         for slot in slots_list:
             table.put_item(
                 Item={
@@ -78,23 +78,42 @@ def handle_cloudwatch_event(event): # call every round hour between 8:00-17:00 i
                     'appointment_times': slot.strftime('%Y-%m-%d %H:%M') + '-' + (slot + timedelta(hours=1)).strftime('%H:%M')
                 }
             )  
+    if current_time.strftime('%A') == "Thursday" and current_time.strftime("%H") == 8:
+        today_at_8_datetime = current_time.replace(hour=8, minute=0, second=0, microsecond=0) 
+        next_sunday_at_8_datetime = today_at_8_datetime + timedelta(days=3)
+        slots_list = [next_sunday_at_8_datetime + timedelta(hours=work_hours+1) for work_hours in range(9)]
+        for slot in slots_list:
+            table.put_item(
+                Item={
+                    'id': slot.strftime('%Y-%m-%d %H:%M'),
+                    'is_available': True,
+                    'chat_id': None,
+                    'username': None,
+                    'full_name': None,
+                    'appointment_times': slot.strftime('%Y-%m-%d %H:%M') + '-' + (slot + timedelta(hours=1)).strftime('%H:%M')
+                }
+            )         
 
-    # 4. delete 2 days old chats: (only at 17:00) 
-    if current_time.strftime("%H") == 17:
+    # 4. delete 2 working days ago chats: (only at 17:00) 
+    if current_time.strftime('%A') != "Sunday" and current_time.strftime("%H") == 17:
         two_days_ago_time_str = (current_time - timedelta(days=2)).strftime('%Y-%m-%d %H:%M')
         delete_items(two_days_ago_time_str)
 
-def delete_items(two_days_ago_time_str):
+    if current_time.strftime('%A') == "Sunday" and current_time.strftime("%H") == 17:
+        four_days_ago_time_str = (current_time - timedelta(days=4)).strftime('%Y-%m-%d %H:%M')
+        delete_items(four_days_ago_time_str)    
+
+def delete_items(x_days_ago_time_str):
     # Initial scan
     response = table.scan(
-        FilterExpression=Attr('recent_use_timestamp').lt(two_days_ago_time_str)
+        FilterExpression=Attr('recent_use_timestamp').lt(x_days_ago_time_str)
     )
     delete_items_from_response(response)
 
     # Continue scanning and deleting until all pages have been processed
     while 'LastEvaluatedKey' in response:
         response = table.scan(
-            FilterExpression=Attr('recent_use_timestamp').lt(two_days_ago_time_str),
+            FilterExpression=Attr('recent_use_timestamp').lt(x_days_ago_time_str),
             ExclusiveStartKey=response['LastEvaluatedKey']
         )
         delete_items_from_response(response)
