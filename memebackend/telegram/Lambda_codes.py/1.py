@@ -375,6 +375,7 @@ def send_available_slots_again(chat_id, message_id):
             'reply_markup': {"inline_keyboard": keyboard}
         }
         response = requests.post(sendMessage_url, json=payload)
+        
         response_dict = response.json()
         sent_message_id = response_dict['result']['message_id']
         table.update_item(
@@ -452,7 +453,7 @@ def schedule_appointment(chat_id, appointment_id, message_id):
 
         payload = {
             'chat_id': str(chat_id),
-            'text': f"An appointment at {item['appointment_times']} was successfuly scheduled for you. See you soon!"
+            'text': f"An appointment at {item['appointment_times']} was successfully scheduled for you. See you soon!"
         }
         response = requests.post(sendMessage_url, json=payload) 
 
