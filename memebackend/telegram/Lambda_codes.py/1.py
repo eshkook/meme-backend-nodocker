@@ -94,21 +94,21 @@ def handle_cloudwatch_event(event): # call every round hour between 8:00-17:00 i
                 }
             )         
 
-    # 4. delete 2 working days ago chats: (only at 17:00) 
+    # 4. delete 2 working days ago chats and close their open suggestions: (only at 17:00) 
     if current_time.strftime('%A') != "Sunday" and current_time.strftime("%H") == 17:
         two_days_ago_time_str = (current_time - timedelta(days=2)).strftime('%Y-%m-%d %H:%M')
-        delete_items(two_days_ago_time_str)
+        delete_items_and_close_suggestions(two_days_ago_time_str)
 
     if current_time.strftime('%A') == "Sunday" and current_time.strftime("%H") == 17:
         four_days_ago_time_str = (current_time - timedelta(days=4)).strftime('%Y-%m-%d %H:%M')
-        delete_items(four_days_ago_time_str)    
+        delete_items_and_close_suggestions(four_days_ago_time_str)    
 
-def delete_items(x_days_ago_time_str):
+def delete_items_and_close_suggestions(x_days_ago_time_str):
     # Initial scan
     response = table.scan(
         FilterExpression=Attr('recent_use_timestamp').lt(x_days_ago_time_str)
     )
-    delete_items_from_response(response)
+    handle_items_from_response(response)
 
     # Continue scanning and deleting until all pages have been processed
     while 'LastEvaluatedKey' in response:
@@ -116,16 +116,27 @@ def delete_items(x_days_ago_time_str):
             FilterExpression=Attr('recent_use_timestamp').lt(x_days_ago_time_str),
             ExclusiveStartKey=response['LastEvaluatedKey']
         )
-        delete_items_from_response(response)
+        handle_items_from_response(response)
 
-def delete_items_from_response(response):
+def handle_items_from_response(response):
     for item in response['Items']:
-        print(f"Deleting item {item}")
+        if item['message_id']:
+            print(f"Deleting open suggestion of chat id {item['id']}")
+            old_message_id = item["message_id"]
+            payload = {
+                'chat_id': str(item['id']),
+                'message_id': int(old_message_id),
+                'text': "Hello! Let's schedule an appointment. Please choose one of the available slots:\n\nYou didn't pick a slot.",
+            }
+            response = requests.post(edit_url, json=payload)
+
+        print(f"Deleting chat id {item['id']}")
         table.delete_item(
             Key={
                 'id': item['id'],
             }
-        )    
+        )
+
 
 def handle_telegram_event(event):
     body = json.loads(event['body'])
@@ -375,7 +386,7 @@ def send_available_slots_again(chat_id, message_id):
             'reply_markup': {"inline_keyboard": keyboard}
         }
         response = requests.post(sendMessage_url, json=payload)
-        
+
         response_dict = response.json()
         sent_message_id = response_dict['result']['message_id']
         table.update_item(
