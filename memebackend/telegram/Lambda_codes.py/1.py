@@ -477,6 +477,7 @@ def schedule_appointment(chat_id, appointment_id, message_id):
                 ':none': None
             }
         )
+        edit_open_suggestions()
     else:
         send_available_slots_again(chat_id, message_id)
 
@@ -507,4 +508,22 @@ def show_data_to_admin(chat_id):
     }
     response = requests.post(sendMessage_url, json=payload)     
 
+def edit_open_suggestions():
+    response = table.scan(
+        FilterExpression=Attr('message_id').exists() & Attr('message_id').ne(None)
+    )
+    items = response.get('Items', [])
+
+    for item in items:
+        available_slots = fetch_available_slots()
+        if available_slots:
+            keyboard = [[{"text": slot['appointment_times'], "callback_data": slot['id']}] for slot in available_slots]
+            text = "Hello! Let's schedule an appointment. Please choose one of the available slots:"   
+            payload = {
+                'chat_id': str(item['chat_id']),
+                'message_id': int(item['message_id']),
+                'text': text,
+                'reply_markup': {"inline_keyboard": keyboard}
+            }
+            response = requests.post(edit_url, json=payload)
 
