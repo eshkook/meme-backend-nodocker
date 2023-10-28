@@ -167,8 +167,9 @@ def handle_telegram_event(event):
 
         # check if there are unused appointment-canceling options
         if item and item["canceling_options_message_id"]:
-            old_message_id = item["canceling_options_message_id"]
             appointment_times = item['appointment_times']
+            appointment_id = item['appointment_id']
+            old_message_id = item["canceling_options_message_id"]
             payload = {
                 'chat_id': str(chat_id),
                 'message_id': int(old_message_id),
