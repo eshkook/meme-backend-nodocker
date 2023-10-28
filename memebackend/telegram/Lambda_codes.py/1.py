@@ -440,7 +440,7 @@ def schedule_appointment(chat_id, appointment_id, message_id):
     )
     item = item.get('Item')
     if item.get("is_available"): # also captures the check of expired adtes, asin in that case it is None
-        response_text = f"You selected: {item['appointment_times']}. See you soon!"
+        response_text = f"You selected: {item['appointment_times']}."
         new_message_text = f"Hello! Let's schedule an appointment. Please choose one of the available slots:\n\n{response_text}"
         
         payload = {
@@ -449,6 +449,12 @@ def schedule_appointment(chat_id, appointment_id, message_id):
             'text': new_message_text
         }
         response = requests.post(edit_url, json=payload)
+
+        payload = {
+            'chat_id': str(chat_id),
+            'text': f"An appointment at {item['appointment_times']} was successfuly scheduled for you. See you soon!"
+        }
+        response = requests.post(sendMessage_url, json=payload) 
 
         chat_item = table.get_item(
             Key={'id': str(chat_id)}
