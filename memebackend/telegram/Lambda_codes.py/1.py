@@ -130,13 +130,22 @@ def handle_items_from_response(response):
             }
             response = requests.post(edit_url, json=payload)
 
+        if item["canceling_options_message_id"]:
+            old_message_id = item["canceling_options_message_id"]
+            appointment_times = item['appointment_times']
+            payload = {
+                'chat_id': str(item['chat_id']),
+                'message_id': int(old_message_id),
+                'text': f"You already have a scheduled appointment at {appointment_times}. What would you like to do:\n\nYou didn't select any option.",
+            }
+            response = requests.post(edit_url, json=payload)    
+
         print(f"Deleting chat id {item['id']}")
         table.delete_item(
             Key={
                 'id': item['id'],
             }
         )
-
 
 def handle_telegram_event(event):
     body = json.loads(event['body'])
@@ -159,11 +168,6 @@ def handle_telegram_event(event):
         # check if there are unused appointment-canceling options
         if item and item["canceling_options_message_id"]:
             old_message_id = item["canceling_options_message_id"]
-            appointment_id = item['appointment_id']
-            item = table.get_item(
-                Key={'id': str(appointment_id)}
-            )
-            item = item.get('Item')
             appointment_times = item['appointment_times']
             payload = {
                 'chat_id': str(chat_id),
@@ -365,6 +369,7 @@ def send_available_slots(chat_id, username, full_name):
                 'recent_use_timestamp': datetime.now(israel_tz).strftime("%Y-%m-%d %H:%M"),
                 'message_id': str(sent_message_id),
                 'appointment_id': None,
+                'appointment_times': None,
                 'canceling_options_message_id': None 
             }
         )
@@ -452,6 +457,7 @@ def schedule_appointment(chat_id, appointment_id, message_id):
     )
     item = item.get('Item')
     if item.get("is_available"): # also captures the check of expired adtes, asin in that case it is None
+        appointment_times = item.get("appointment_times")
         response_text = f"You selected: {item['appointment_times']}."
         new_message_text = f"Hello! Let's schedule an appointment. Please choose one of the available slots:\n\n{response_text}"
         
@@ -489,9 +495,10 @@ def schedule_appointment(chat_id, appointment_id, message_id):
             Key={
                 'id': str(chat_id),
             },
-            UpdateExpression="SET appointment_id = :appointment_id, message_id = :none",
+            UpdateExpression="SET appointment_id = :appointment_id, appointment_times = :appointment_times, message_id = :none",
             ExpressionAttributeValues={
                 ':appointment_id': appointment_id,
+                ':appointment_times': appointment_times,
                 ':none': None
             }
         )
