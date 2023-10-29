@@ -52,7 +52,7 @@ def handle_cloudwatch_event(event): # call every round hour between 8:00-17:00 i
         }
         response = requests.post(sendMessage_url, json=payload)
 
-    # 2. drop the outdated slot 
+    # 2. drop the outdated slot and chats that have appointments to these slots ?????????????????
     if current_time.strftime("%H") >= 9: 
         last_round_hour_time = current_time.replace(minute=0, second=0, microsecond=0)
         last_round_hour_time = last_round_hour_time.strftime("%Y-%m-%d %H:%M")
