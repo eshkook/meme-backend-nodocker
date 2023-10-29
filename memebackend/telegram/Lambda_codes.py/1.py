@@ -52,15 +52,28 @@ def handle_cloudwatch_event(event): # call every round hour between 8:00-17:00 i
         }
         response = requests.post(sendMessage_url, json=payload)
 
-    # 2. drop the outdated slot and chats that have appointments to these slots ?????????????????
+    # 2. delete the outdated slot and chat that has a scheduled appointment to this slot 
     if current_time.strftime("%H") >= 9: 
         last_round_hour_time = current_time.replace(minute=0, second=0, microsecond=0)
         last_round_hour_time = last_round_hour_time.strftime("%Y-%m-%d %H:%M")
+
+        # delete the slot:
         table.delete_item(
         Key={
             'id': last_round_hour_time
             }
         )
+        # delete the related chat (if exists):
+        response = table.scan(
+            FilterExpression=Attr('appointment_id').exists() & Attr('appointment_id').eq(last_round_hour_time)
+        )
+        items = response.get('Items', [])
+        if items:
+            table.delete_item(
+            Key={
+                'id': items[0]['id']
+                }
+            )
 
     # 3. add next day's slots: (only at 8:00)
     if current_time.strftime('%A') != "Thursday" and current_time.strftime("%H") == 8:

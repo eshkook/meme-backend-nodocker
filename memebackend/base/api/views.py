@@ -12,6 +12,12 @@ from rest_framework import status
 
 from rest_framework.views import APIView
 
+from django.contrib.auth.models import User
+from django.contrib.auth import login
+from base.models import Profile
+from .serializers import ProfileSerializer
+from django.db import IntegrityError
+
 def find_dict_by_key_value(dict_list, target_key, target_value):
     for dictionary in dict_list:
         if dictionary.get(target_key) == target_value:
@@ -138,3 +144,32 @@ def getUser(request, pk):
         return Response(user_dict)
     else:
         return Response({"detail": "no such user"}, status=404)
+
+@api_view(['POST'])
+def signup_view(request):
+    data = request.data
+    username = data.get('username')
+    password = data.get('password')
+    hobbies = data.get('hobbies')
+    age = data.get('age')
+    try:
+        age = int(age)
+        assert 0 <= age <= 120
+    except (ValueError, AssertionError):
+        return Response({'error': 'Invalid age'}, status=status.HTTP_400_BAD_REQUEST)
+
+    try:
+        user = User.objects.create_user(username=username, password=password)
+    except IntegrityError:
+        return Response({'error': 'Username is already taken'}, status=status.HTTP_400_BAD_REQUEST)
+
+    profile = Profile.objects.create(user=user, hobbies=hobbies, age=age)
+    login(request, user)  # This logs in the user and creates a session
+
+    response_data = {
+        'message': 'User created and logged in successfully',
+        'username': user.username,
+        'hobbies': profile.hobbies,
+        'age': profile.age,
+    }
+    return Response(response_data, status=status.HTTP_201_CREATED)

@@ -9,6 +9,6 @@ urlpatterns = [
     path('posts/', views.PostsView.as_view(), name='posts'),
     path('posts/<str:pk>/', views.getPost),
     path('users/', views.getUsers),
-    path('users/<str:pk>/', views.getUser)
-    
+    path('users/<str:pk>/', views.getUser),
+    path('signup/', views.signup_view)
 ]
