@@ -1,4 +1,3 @@
-from rest_framework.decorators import api_view
 from rest_framework.response import Response
 # from .serializers import RoomSerializer
 import json
@@ -12,11 +11,16 @@ from rest_framework import status
 
 from rest_framework.views import APIView
 
+from django.contrib.auth import authenticate, login
 from django.contrib.auth.models import User
-from django.contrib.auth import login
 from base.models import Profile
 from .serializers import ProfileSerializer
 from django.db import IntegrityError
+from django.contrib.auth import logout
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.permissions import IsAuthenticated
+from django.http import JsonResponse
+from django.utils import timezone
 
 def find_dict_by_key_value(dict_list, target_key, target_value):
     for dictionary in dict_list:
@@ -173,3 +177,25 @@ def signup_view(request):
         'age': profile.age,
     }
     return Response(response_data, status=status.HTTP_201_CREATED)
+
+@api_view(['POST'])
+def login_view(request):
+    if request.method == 'POST':
+        username = request.data.get('username')
+        password = request.data.get('password')
+        user = authenticate(username=username, password=password)
+        if user is not None:
+            login(request, user)
+            return Response({'username': username}, status=status.HTTP_200_OK)
+        else:
+            return Response({'error': 'Invalid credentials'}, status=status.HTTP_400_BAD_REQUEST)
+        
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def logout_view(request):
+    logout(request)
+    return Response({"detail": "Logout successful."}, status=200)        
+
+def get_timestamp(request):
+    current_timestamp = timezone.now()
+    return JsonResponse({'timestamp': current_timestamp})

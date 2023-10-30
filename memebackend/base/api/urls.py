@@ -10,5 +10,8 @@ urlpatterns = [
     path('posts/<str:pk>/', views.getPost),
     path('users/', views.getUsers),
     path('users/<str:pk>/', views.getUser),
-    path('signup/', views.signup_view)
+    path('signup/', views.signup_view),
+    path('login/', views.login_view, name='login_view'),
+    path('api/logout/', views.logout_view, name='logout'),
+    path('api/gettimestamp/', views.get_timestamp, name='get_timestamp')
 ]
