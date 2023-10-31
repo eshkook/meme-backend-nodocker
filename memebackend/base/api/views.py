@@ -189,7 +189,7 @@ def logout_view(request):
     logout(request)
     return Response({"detail": "Logout successful."}, status=200)  
 
-@api_view(['GET'])
+@api_view(['POST'])
 @permission_classes([IsAuthenticated])
 def get_response_count(request):
     count = request.data.get('count')
