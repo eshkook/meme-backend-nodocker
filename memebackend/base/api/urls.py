@@ -13,5 +13,5 @@ urlpatterns = [
     path('signup/', views.signup_view),
     path('login/', views.login_view, name='login_view'),
     path('api/logout/', views.logout_view, name='logout'),
-    path('api/gettimestamp/', views.get_timestamp, name='get_timestamp')
+    path('api/getresponsecount/', views.get_response_count, name='get_response_count')
 ]

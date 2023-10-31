@@ -161,7 +161,7 @@ def signup_view(request):
         assert 0 <= age <= 120
     except (ValueError, AssertionError):
         return Response({'error': 'Invalid age'}, status=status.HTTP_400_BAD_REQUEST)
-
+    
     try:
         user = User.objects.create_user(username=username, password=password)
     except IntegrityError:
@@ -170,32 +170,27 @@ def signup_view(request):
     profile = Profile.objects.create(user=user, hobbies=hobbies, age=age)
     login(request, user)  # This logs in the user and creates a session
 
-    response_data = {
-        'message': 'User created and logged in successfully',
-        'username': user.username,
-        'hobbies': profile.hobbies,
-        'age': profile.age,
-    }
-    return Response(response_data, status=status.HTTP_201_CREATED)
+    return Response({'username': username}, status=status.HTTP_201_CREATED)
 
 @api_view(['POST'])
 def login_view(request):
-    if request.method == 'POST':
-        username = request.data.get('username')
-        password = request.data.get('password')
-        user = authenticate(username=username, password=password)
-        if user is not None:
-            login(request, user)
-            return Response({'username': username}, status=status.HTTP_200_OK)
-        else:
-            return Response({'error': 'Invalid credentials'}, status=status.HTTP_400_BAD_REQUEST)
+    username = request.data.get('username')
+    password = request.data.get('password')
+    user = authenticate(username=username, password=password)
+    if user is not None:
+        login(request, user)
+        return Response({'username': username}, status=status.HTTP_200_OK)
+    else:
+        return Response({'error': 'Invalid credentials'}, status=status.HTTP_400_BAD_REQUEST)
         
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
 def logout_view(request):
     logout(request)
-    return Response({"detail": "Logout successful."}, status=200)        
+    return Response({"detail": "Logout successful."}, status=200)  
 
-def get_timestamp(request):
-    current_timestamp = timezone.now()
-    return JsonResponse({'timestamp': current_timestamp})
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def get_response_count(request):
+    count = request.data.get('count')
+    return JsonResponse({'count': count+1})
