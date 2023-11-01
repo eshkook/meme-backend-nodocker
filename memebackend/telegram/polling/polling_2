@@ -20,6 +20,13 @@ import dateutil.tz
 
 # ?????
 
+# polling commands:
+# 
+# 1. send message
+# await update.message.reply_text(text=text, reply_markup=InlineKeyboardMarkup(keyboard))
+# 2. edit message:
+# await query.message.edit_text(message_id=message_id, text=text, reply_markup=InlineKeyboardMarkup(keyboard))
+
 # AWS DynamoDB setup
 region_name = 'eu-west-1'
 table_name = 'botox_3_table'
