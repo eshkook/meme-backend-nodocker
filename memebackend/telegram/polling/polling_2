@@ -1,0 +1,472 @@
+from typing import Final
+from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, filters
+from telegram.ext import Application, MessageHandler, CallbackQueryHandler, ContextTypes
+
+import boto3
+from boto3.dynamodb.conditions import Attr
+from datetime import datetime, timedelta
+import dateutil.tz
+
+# switch to webhook:
+
+# the api gateway: (attatch it to a 'url' key to the setWebhook post, in body->form data)
+# "https://xk8r88ywm0.execute-api.eu-west-1.amazonaws.com/botox_function"
+
+# To Steup Webhook for Telegram Bot: (make this post-request to let telgram know where to send the messages)
+# f"https://api.telegram.org/bot{TOKEN}/setWebhook"
+# f"https://api.telegram.org/bot6467965504:AAHoFv-gir5CNKY8ZJvD-oaj0yYwseuTMmg/setWebhook"
+
+# switch to polling:
+
+# ?????
+
+# AWS DynamoDB setup
+region_name = 'eu-west-1'
+table_name = 'botox_3_table'
+# dynamodb = boto3.resource('dynamodb', region_name=region_name)
+session = boto3.session.Session(region_name='eu-west-1')
+dynamodb = session.resource('dynamodb')
+table = dynamodb.Table(table_name)
+israel_tz = dateutil.tz.gettz('Asia/Jerusalem')
+
+# Telegram setup
+TOKEN: Final = "6467965504:AAHoFv-gir5CNKY8ZJvD-oaj0yYwseuTMmg"
+BOT_USERNAME: Final = "@zbabur_bot"
+
+def fetch_available_slots():
+    response = table.scan(
+        FilterExpression=Attr('is_available').eq(True) 
+    )
+    available_slots = response.get('Items', [])
+    sorted_slots = sorted(available_slots, key=lambda x: x['appointment_times'])
+    return sorted_slots
+
+def send_available_slots(chat_id, username, full_name):
+    available_slots = fetch_available_slots()
+    if available_slots:
+        keyboard = [[{"text": slot['appointment_times'], "callback_data": slot['id']}] for slot in available_slots]
+        text = "Hello! Let's schedule an appointment. Please choose one of the available slots:"   
+        payload = {
+            'chat_id': str(chat_id),
+            'text': text,
+            'reply_markup': {"inline_keyboard": keyboard}
+        }
+        response = requests.post(sendMessage_url, json=payload)
+        response_dict = response.json()
+        sent_message_id = response_dict['result']['message_id']
+        table.put_item(
+            Item={
+                'id': str(chat_id),
+                'username': username,
+                'full_name': full_name,
+                'recent_use_timestamp': datetime.now(israel_tz).strftime("%Y-%m-%d %H:%M"),
+                'message_id': str(sent_message_id),
+                'appointment_id': None,
+                'appointment_times': None,
+                'canceling_options_message_id': None 
+            }
+        )
+    else:
+        payload = {
+            'chat_id': chat_id,
+            'text': "Sorry, no available slots at the moment."
+        }
+        response = requests.post(sendMessage_url, json=payload)   
+
+def send_available_slots_again(chat_id, message_id):
+    available_slots = fetch_available_slots()
+    if available_slots:
+        keyboard = [[{"text": slot['appointment_times'], "callback_data": slot['id']}] for slot in available_slots]
+        payload = {
+            'chat_id': str(chat_id),
+            'message_id': int(message_id),
+            'text': "Hello! Let's schedule an appointment. Please choose one of the available slots:\n\nThat slot was already taken or expired! Please choose one of the available slots:",
+            'reply_markup': {"inline_keyboard": keyboard}
+        }
+        response = requests.post(sendMessage_url, json=payload)
+
+        response_dict = response.json()
+        sent_message_id = response_dict['result']['message_id']
+        table.update_item(
+            Key={
+                'id': str(chat_id),
+            },
+            UpdateExpression="SET message_id = :sent_message_id",
+            ExpressionAttributeValues={':sent_message_id': str(sent_message_id)}
+        )
+
+    else:
+        payload = {
+            'chat_id': str(chat_id),
+            'message_id': int(message_id),
+            'text': "Hello! Let's schedule an appointment. Please choose one of the available slots:\n\nThat slot was already taken! Sorry, no available slots at the moment."
+        }
+        response = requests.post(edit_url, json=payload)
+
+def collapse_unused_slots(chat_id):
+    item = table.get_item(
+                Key={'id': str(chat_id)}
+            )
+    item = item.get('Item')
+    old_message_id = item["message_id"]
+    payload = {
+        'chat_id': str(chat_id),
+        'message_id': int(old_message_id),
+        'text': "Hello! Let's schedule an appointment. Please choose one of the available slots:\n\nYou didn't pick a slot.",
+    }
+    response = requests.post(edit_url, json=payload)
+     
+def ask_to_cancel_appointment(chat_id, appointment_id):
+    item = table.get_item(
+        Key={'id': appointment_id}
+    )
+    item = item.get('Item')
+    appointment_times = item["appointment_times"]
+    keyboard = [
+                    [{"text": "Keep the appointment", "callback_data": 'keep'}],
+                    [{"text": "Cancel the appointment", "callback_data": 'cancel'}],
+                    [{"text": "Reschedule the appointment", "callback_data": 'reschedule'}]
+                ]
+    payload = {
+        'chat_id': str(chat_id),
+        'text': f"You already have a scheduled appointment at {appointment_times}. What would you like to do:",
+        'reply_markup': {"inline_keyboard": keyboard}
+    }
+    response = requests.post(sendMessage_url, json=payload)
+    response_dict = response.json()
+    sent_message_id = response_dict['result']['message_id']
+    table.update_item(
+    Key={
+        'id': str(chat_id),
+        },
+        UpdateExpression="SET canceling_options_message_id = :canceling_options_message_id",
+        ExpressionAttributeValues={':canceling_options_message_id': str(sent_message_id)}
+    )
+        
+def schedule_appointment(chat_id, appointment_id, message_id): 
+    # get the chosen slot
+    item = table.get_item(
+        Key={'id': str(appointment_id)}
+    )
+    item = item.get('Item')
+    if item.get("is_available"): # also captures the check of expired adtes, asin in that case it is None
+        appointment_times = item.get("appointment_times")
+        response_text = f"You selected: {item['appointment_times']}."
+        new_message_text = f"Hello! Let's schedule an appointment. Please choose one of the available slots:\n\n{response_text}"
+        
+        payload = {
+            'chat_id': str(chat_id),
+            'message_id': int(message_id),
+            'text': new_message_text
+        }
+        response = requests.post(edit_url, json=payload)
+
+        payload = {
+            'chat_id': str(chat_id),
+            'text': f"An appointment at {item['appointment_times']} was successfully scheduled for you. See you soon!"
+        }
+        response = requests.post(sendMessage_url, json=payload) 
+
+        chat_item = table.get_item(
+            Key={'id': str(chat_id)}
+        )
+        chat_item = chat_item.get('Item')
+
+        table.update_item(
+            Key={
+                'id': appointment_id,
+            },
+            UpdateExpression="SET is_available = :false, chat_id = :chat_id, username = :username, full_name = :full_name",
+            ExpressionAttributeValues={
+                ':false': False,
+                ':chat_id': str(chat_id),
+                ':username': chat_item['username'],
+                ':full_name': chat_item['full_name']
+            }
+        )
+        table.update_item(
+            Key={
+                'id': str(chat_id),
+            },
+            UpdateExpression="SET appointment_id = :appointment_id, appointment_times = :appointment_times, message_id = :none",
+            ExpressionAttributeValues={
+                ':appointment_id': appointment_id,
+                ':appointment_times': appointment_times,
+                ':none': None
+            }
+        )
+        edit_open_suggestions()
+    else:
+        send_available_slots_again(chat_id, message_id)
+
+def too_late_to_cancel_appointment(chat_id, appointment_times):
+    payload = {
+        'chat_id': str(chat_id),
+        'text': f"It is too late to cancel or reschedule your appointment. Your appointment remains at {appointment_times}. See you soon!",
+    }
+    response = requests.post(sendMessage_url, json=payload)        
+
+def show_data_to_admin(chat_id):
+    response = table.scan(
+        FilterExpression=Attr('chat_id').exists() & Attr('chat_id').ne(None)
+    )
+    scheduled_slots = response.get('Items', [])
+    
+    if scheduled_slots:
+        sorted_scheduled_slots = sorted(scheduled_slots, key=lambda x: x['appointment_times'])
+        calendar_summary = "Calendar:"
+        for index, scheduled_slot in enumerate(sorted_scheduled_slots):
+            calendar_summary += f"\n\n{index + 1}.\nAppointment times: {scheduled_slot['appointment_times']}\nUsername: {scheduled_slot['username']}\nFull name: {scheduled_slot['full_name']}"
+    else:
+         calendar_summary = "No scheduled appointments."       
+
+    payload = {
+        'chat_id': str(chat_id),
+        'text': calendar_summary,
+    }
+    response = requests.post(sendMessage_url, json=payload)     
+
+def edit_open_suggestions():
+    response = table.scan(
+        FilterExpression=Attr('message_id').exists() & Attr('message_id').ne(None)
+    )
+    items = response.get('Items', [])
+
+    for item in items:
+        available_slots = fetch_available_slots()
+        if available_slots:
+            keyboard = [[{"text": slot['appointment_times'], "callback_data": slot['id']}] for slot in available_slots]
+            text = "Hello! Let's schedule an appointment. Please choose one of the available slots:"   
+            payload = {
+                'chat_id': str(item['chat_id']),
+                'message_id': int(item['message_id']),
+                'text': text,
+                'reply_markup': {"inline_keyboard": keyboard}
+            }
+            response = requests.post(edit_url, json=payload)
+
+async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+
+    chat_id = update.message.chat_id
+    user_message = update.message.text
+    message_id = update.message.message_id
+    user_info = update.message.from_user
+    username = user_info.username
+    full_name = f"{user_info.first_name or ''} {user_info.last_name or ''}".strip()
+
+    item = table.get_item(
+        Key={'id': str(chat_id)}
+    )
+    item = item.get('Item')
+
+    # check if there are unused appointment-canceling options
+    if item and item["canceling_options_message_id"]:
+        appointment_times = item['appointment_times']
+        appointment_id = item['appointment_id']
+        old_message_id = item["canceling_options_message_id"]
+        payload = {
+            'chat_id': str(chat_id),
+            'message_id': int(old_message_id),
+            'text': f"You already have a scheduled appointment at {appointment_times}. What would you like to do:\n\nYou didn't select any option.",
+        }
+        response = requests.post(edit_url, json=payload)
+
+        if user_message == 'admin': 
+            show_data_to_admin(chat_id)
+        # check if we allow canceling (if there is more than 1 hour until appointment)
+        elif (datetime.strptime(appointment_id, '%Y-%m-%d %H:%M').replace(tzinfo=israel_tz) - datetime.now(israel_tz)).total_seconds() > 3600: 
+            ask_to_cancel_appointment(chat_id, appointment_id)
+        else:
+            too_late_to_cancel_appointment(chat_id, appointment_id)
+    else:
+        if user_message == 'admin': 
+            if item and item['message_id']:
+                collapse_unused_slots(chat_id)
+            show_data_to_admin(chat_id)
+        else:    
+            # check if the user already has an appointment:
+            appointment_id = item.get('appointment_id') if item else None                
+            if appointment_id: # then the user already has an appointment scheduled
+                # check if we allow canceling (if there is more than 1 hour until appointment)
+                if (datetime.strptime(appointment_id, '%Y-%m-%d %H:%M').replace(tzinfo=israel_tz) - datetime.now(israel_tz)).total_seconds() > 3600:
+                    ask_to_cancel_appointment(chat_id, appointment_id)
+                else:
+                    too_late_to_cancel_appointment(chat_id, appointment_id)    
+            else:
+                if item and item['message_id']:
+                    collapse_unused_slots(chat_id)
+
+                send_available_slots(chat_id, username, full_name)
+
+    # update chat's timestamp:
+    item = table.get_item(
+        Key={'id': str(chat_id)}
+    )
+    item = item.get('Item')
+    
+    if item:
+        table.update_item(
+            Key={
+                'id': str(chat_id),
+            },
+            UpdateExpression="SET recent_use_timestamp = :recent_use_timestamp",
+            ExpressionAttributeValues={':recent_use_timestamp': datetime.now(israel_tz).strftime("%Y-%m-%d %H:%M")}
+        )            
+
+async def handle_callback_query(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+
+    chat_id = update.callback_query.message.chat_id
+    query_data = update.callback_query.data
+    message_id = update.callback_query.message.message_id
+
+    # check when is the appointment:
+    item = table.get_item(
+        Key={'id': str(chat_id)}
+    )
+    item = item.get('Item')
+    appointment_id = item.get('appointment_id')
+    username = item.get('username')
+    full_name = item.get('full_name')
+
+    if appointment_id:
+        item = table.get_item( 
+            Key={'id': appointment_id}
+        )
+        item = item.get('Item')
+        appointment_times = item.get('appointment_times')
+
+    if query_data == 'keep':
+        item = table.get_item(
+            Key={'id': appointment_id}
+        )
+        item = item.get('Item')
+        appointment_times = item.get('appointment_times')
+        payload = {
+            'chat_id': str(chat_id),
+            'message_id': int(message_id),
+            'text': f"You already have a scheduled appointment at {appointment_times}. What would you like to do:\n\nYou selected: Keep the appointment.",
+        }
+        response = requests.post(edit_url, json=payload)
+
+        table.update_item(
+            Key={
+                'id': str(chat_id),
+            },
+            UpdateExpression="SET canceling_options_message_id = :none",
+            ExpressionAttributeValues={':none': None}
+        )
+
+        payload = {
+            'chat_id': str(chat_id),
+            'text': f"Your appointment is kept. See you soon!",
+        }
+        response = requests.post(sendMessage_url, json=payload)
+
+    elif query_data == 'cancel':
+        # edit the earlier message
+        payload = {
+            'chat_id': str(chat_id),
+            'message_id': int(message_id),
+            'text': f"You already have a scheduled appointment at {appointment_times}. What would you like to do:\n\nYou selected: Cancel the appointment.",
+        }
+        response = requests.post(edit_url, json=payload)
+
+        # check if we allow canceling (if there is more than 1 hour until appointment)
+        if (datetime.strptime(appointment_id, '%Y-%m-%d %H:%M').replace(tzinfo=israel_tz) - datetime.now(israel_tz)).total_seconds() > 3600:
+            payload = {
+                'chat_id': str(chat_id),
+                'text': f"Your appointment has been canceled. Have a great day!",
+            }
+            response = requests.post(sendMessage_url, json=payload)
+
+            # Update the selected slot to mark it as available:
+            table.update_item(
+                Key={
+                    'id': appointment_id,
+                },
+                UpdateExpression="SET is_available = :true, chat_id = :none",
+                ExpressionAttributeValues={':true': True,
+                                        ':none': None}
+            )
+            # delete chat_id from DB:
+            table.delete_item(
+                Key={
+                    'id': str(chat_id)
+                }
+            )
+        else:
+            too_late_to_cancel_appointment(chat_id, appointment_times)
+
+    elif query_data == 'reschedule':
+        # edit the earlier message
+        payload = {
+            'chat_id': str(chat_id),
+            'message_id': int(message_id),
+            'text': f"You already have a scheduled appointment at {appointment_times}. What would you like to do:\n\nYou selected: Reschedule the appointment.",
+        }
+        response = requests.post(edit_url, json=payload)
+
+        # check if we allow canceling (if there is more than 1 hour until appointment)
+        if (datetime.strptime(appointment_id, '%Y-%m-%d %H:%M').replace(tzinfo=israel_tz) - datetime.now(israel_tz)).total_seconds() > 3600:
+            # Update the selected slot to mark it as available:
+            table.update_item(
+                Key={
+                    'id': appointment_id,
+                },
+                UpdateExpression="SET is_available = :true, chat_id = :none",
+                ExpressionAttributeValues={':true': True, ':none': None}
+            )
+            
+            # Update the chat_id:
+            table.update_item(
+                Key={
+                    'id': str(chat_id),
+                },
+                UpdateExpression="SET appointment_id = :none, canceling_options_message_id = :none",
+                ExpressionAttributeValues={':none': None,
+                                        ':none': None,
+                                        }
+            )
+            send_available_slots(chat_id, username, full_name)
+        else:
+            too_late_to_cancel_appointment(chat_id, appointment_times)    
+
+    else:  # then the callback data is the appointment ID 
+        appointment_id = query_data  
+        message_id = update.callback_query.message.message_id
+        schedule_appointment(chat_id, appointment_id, message_id)
+
+    # update chat's timestamp:
+    item = table.get_item(
+        Key={'id': str(chat_id)}
+    )
+    item = item.get('Item')
+    
+    if item:
+        table.update_item(
+            Key={
+                'id': str(chat_id),
+            },
+            UpdateExpression="SET recent_use_timestamp = :recent_use_timestamp",
+            ExpressionAttributeValues={':recent_use_timestamp': datetime.now(israel_tz).strftime("%Y-%m-%d %H:%M")}
+        )    
+
+async def error(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    print(f"Update {update} caused error {context.error}")
+
+if __name__ == '__main__':
+    print("starting bot")
+    app = Application.builder().token(TOKEN).build()
+
+    # messages
+    app.add_handler(MessageHandler(filters.TEXT, handle_message))
+
+    # callback query handler for inline keyboard buttons
+    app.add_handler(CallbackQueryHandler(handle_callback_query))
+
+    # errors
+    app.add_error_handler(error)
+
+    # polling 
+    print("polling")
+    app.run_polling(poll_interval=3)  # check for messages every 3 seconds
