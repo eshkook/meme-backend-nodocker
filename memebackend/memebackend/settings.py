@@ -121,7 +121,12 @@ CSRF_COOKIE_SECURE = True
 SECURE_BROWSER_XSS_FILTER = True
 X_FRAME_OPTIONS = 'DENY'
 
-
+###############################################
+# Django settings
+SESSION_COOKIE_DOMAIN = '.eu-west-1.awsapprunner.com'
+SESSION_COOKIE_PATH = '/'
+SESSION_COOKIE_SAMESITE = 'None'
+################################################
 
 # Password validation
 # https://docs.djangoproject.com/en/4.0/ref/settings/#auth-password-validators
