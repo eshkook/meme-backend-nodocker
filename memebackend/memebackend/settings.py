@@ -168,6 +168,8 @@ STATICFILES_DIRS = [
     BASE_DIR / 'static'
 ]
 
+# STATIC_ROOT = os.path.join(BASE_DIR, 'static') ##########################################1
+
 # Default primary key field type
 # https://docs.djangoproject.com/en/4.0/ref/settings/#default-auto-field
 
@@ -199,3 +201,12 @@ CORS_ALLOWED_ORIGINS = [
 CORS_ALLOW_CREDENTIALS = True
 
 # CORS_ALLOWED_ORIGIN_REGEXES = [] # specify allowed urls with regex
+
+# REST_FRAMEWORK = { ###############################################2
+#     'DEFAULT_PREMISSION_CLASSES': {
+#         'rest_framework.premissions.IsAuthenticated'
+#     },
+#     'DEFAULT_AUTHENTICATION_CLASSES': {
+#         'rest_framework.authentication.SessionAuthentication'
+#     }
+# }

@@ -20,7 +20,12 @@ from django.contrib.auth import logout
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from django.http import JsonResponse
-from django.utils import timezone
+
+from rest_framework import permissions
+from django.contrib import auth
+from .serializers import UserSerializer
+from django.views.decorators.csrf import ensure_csrf_cookie, csrf_protect
+from django.utils.decorators import method_decorator
 
 def find_dict_by_key_value(dict_list, target_key, target_value):
     for dictionary in dict_list:
