@@ -23,7 +23,6 @@ from django.http import JsonResponse
 
 from rest_framework import permissions
 from django.contrib import auth
-from .serializers import UserSerializer
 from django.views.decorators.csrf import ensure_csrf_cookie, csrf_protect
 from django.utils.decorators import method_decorator
 
