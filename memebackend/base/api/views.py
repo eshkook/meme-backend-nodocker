@@ -276,18 +276,33 @@ class GetCSRFToken(APIView):
         return Response({ 'success': 'CSRF cookie set' })
 
 class DeleteAccountView(APIView):
+    permission_classes = [IsAuthenticated]
+
     def delete(self, request, format=None):
         user = self.request.user
 
         try:
-            User.objects.filter(id=user.id).delete()
-
+            user.delete()  # Directly delete the user object
             return Response({ 'success': 'User deleted successfully' })
         except:
-            return Response({ 'error': 'Something went wrong when trying to delete user' })
+            # It's better to log this error as well
+            return Response({ 'error': 'Something went wrong when trying to delete user' }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+# class DeleteAccountView(APIView):
+#     def delete(self, request, format=None):
+#         user = self.request.user
+
+#         try:
+#             User.objects.filter(id=user.id).delete()
+
+#             return Response({ 'success': 'User deleted successfully' })
+#         except:
+#             return Response({ 'error': 'Something went wrong when trying to delete user' })
 
 class GetResponseView(APIView):
+    permission_classes = [IsAuthenticated]
     def post(self, request, format=None):
         count = request.data.get('count')
         return JsonResponse({'count': count+1}) 
+      
       
