@@ -154,48 +154,140 @@ def getUser(request, pk):
     else:
         return Response({"detail": "no such user"}, status=404)
 
-@api_view(['POST'])
-def signup_view(request):
-    data = request.data
-    username = data.get('username')
-    password = data.get('password')
-    hobbies = data.get('hobbies')
-    age = data.get('age')
-    try:
-        age = int(age)
-        assert 0 <= age <= 120
-    except (ValueError, AssertionError):
-        return Response({'error': 'Invalid age'}, status=status.HTTP_400_BAD_REQUEST)
+# @api_view(['POST'])
+# def signup_view(request):
+#     data = request.data
+#     username = data.get('username')
+#     password = data.get('password')
+#     hobbies = data.get('hobbies')
+#     age = data.get('age')
+#     try:
+#         age = int(age)
+#         assert 0 <= age <= 120
+#     except (ValueError, AssertionError):
+#         return Response({'error': 'Invalid age'}, status=status.HTTP_400_BAD_REQUEST)
     
-    try:
-        user = User.objects.create_user(username=username, password=password)
-    except IntegrityError:
-        return Response({'error': 'Username is already taken'}, status=status.HTTP_400_BAD_REQUEST)
+#     try:
+#         user = User.objects.create_user(username=username, password=password)
+#     except IntegrityError:
+#         return Response({'error': 'Username is already taken'}, status=status.HTTP_400_BAD_REQUEST)
 
-    profile = Profile.objects.create(user=user, hobbies=hobbies, age=age)
-    login(request, user)  # This logs in the user and creates a session
+#     profile = Profile.objects.create(user=user, hobbies=hobbies, age=age)
+#     login(request, user)  # This logs in the user and creates a session
 
-    return Response({'username': username}, status=status.HTTP_201_CREATED)
+#     return Response({'username': username}, status=status.HTTP_201_CREATED)
 
-@api_view(['POST'])
-def login_view(request):
-    username = request.data.get('username')
-    password = request.data.get('password')
-    user = authenticate(username=username, password=password)
-    if user is not None:
-        login(request, user)
-        return Response({'username': username}, status=status.HTTP_200_OK)
-    else:
-        return Response({'error': 'Invalid credentials'}, status=status.HTTP_400_BAD_REQUEST)
+# @api_view(['POST'])
+# def login_view(request):
+#     username = request.data.get('username')
+#     password = request.data.get('password')
+#     user = authenticate(username=username, password=password)
+#     if user is not None:
+#         login(request, user)
+#         return Response({'username': username}, status=status.HTTP_200_OK)
+#     else:
+#         return Response({'error': 'Invalid credentials'}, status=status.HTTP_400_BAD_REQUEST)
         
-@api_view(['POST'])
-@permission_classes([IsAuthenticated])
-def logout_view(request):
-    logout(request)
-    return Response({"detail": "Logout successful."}, status=200)  
+# @api_view(['POST'])
+# @permission_classes([IsAuthenticated])
+# def logout_view(request):
+#     logout(request)
+#     return Response({"detail": "Logout successful."}, status=200)  
 
-@api_view(['POST'])
-@permission_classes([IsAuthenticated])
-def get_response_count(request):
-    count = request.data.get('count')
-    return JsonResponse({'count': count+1})
+# @api_view(['POST'])
+# @permission_classes([IsAuthenticated])
+# def get_response_count(request):
+#     count = request.data.get('count')
+#     return JsonResponse({'count': count+1})
+
+#####################################################################################################################
+class CheckAuthenticatedView(APIView):
+    def get(self, request, format=None):
+        user = self.request.user
+
+        try:
+            isAuthenticated = user.is_authenticated
+
+            if isAuthenticated:
+                return Response({ 'isAuthenticated': 'success' })
+            else:
+                return Response({ 'isAuthenticated': 'error' })
+        except:
+            return Response({ 'error': 'Something went wrong when checking authentication status' })
+
+@method_decorator(csrf_protect, name='dispatch')
+class SignupView(APIView):
+    permission_classes = (permissions.AllowAny, )
+
+    def post(self, request, format=None):
+        data = self.request.data
+
+        username = data.get('username')
+        password = data.get('password')
+        hobbies = data.get('hobbies')
+        age = data.get('age')
+
+        try:
+            if User.objects.filter(username=username).exists():
+                return Response({ 'error': 'Username is already taken' }, status=status.HTTP_400_BAD_REQUEST)
+            else:
+                user = User.objects.create_user(username=username, password=password)
+                profile = Profile.objects.create(user=user, hobbies=hobbies, age=age)
+                login(request, user)  
+
+                return Response({'username': username}, status=status.HTTP_201_CREATED)
+        except:
+            return Response({ 'error': 'Something went wrong when registering account' }, status=status.HTTP_400_BAD_REQUEST)
+
+@method_decorator(csrf_protect, name='dispatch')
+class LoginView(APIView):
+    permission_classes = (permissions.AllowAny, )
+
+    def post(self, request, format=None):
+        data = self.request.data
+
+        username = data['username']
+        password = data['password']
+
+        try:
+            user = auth.authenticate(username=username, password=password)
+
+            if user is not None:
+                auth.login(request, user)
+                return Response({'username': username}, status=status.HTTP_200_OK)
+            else:
+                return Response({'error': 'Invalid credentials'}, status=status.HTTP_400_BAD_REQUEST)
+        except:
+            return Response({ 'error': 'Something went wrong when logging in' })
+
+class LogoutView(APIView):
+    def post(self, request, format=None):
+        try:
+            auth.logout(request)
+            return Response({"detail": "Logout successful."}, status=200)
+        except:
+            return Response({ 'error': 'Something went wrong when logging out' }, status=status.HTTP_400_BAD_REQUEST)
+
+@method_decorator(ensure_csrf_cookie, name='dispatch')
+class GetCSRFToken(APIView):
+    permission_classes = (permissions.AllowAny, )
+
+    def get(self, request, format=None):
+        return Response({ 'success': 'CSRF cookie set' })
+
+class DeleteAccountView(APIView):
+    def delete(self, request, format=None):
+        user = self.request.user
+
+        try:
+            User.objects.filter(id=user.id).delete()
+
+            return Response({ 'success': 'User deleted successfully' })
+        except:
+            return Response({ 'error': 'Something went wrong when trying to delete user' })
+
+class GetResponseView(APIView):
+    def post(self, request, format=None):
+        count = request.data.get('count')
+        return JsonResponse({'count': count+1}) 
+      
