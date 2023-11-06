@@ -26,13 +26,13 @@ DEBUG = True
 
 # ALLOWED_HOSTS = [
 #     'v9m2jp3tgz.eu-west-1.awsapprunner.com',
-#     'http://localhost:3000',  
-#     'http://127.0.0.1:3000', 
-#     'http://localhost:3001',  
-#     'http://127.0.0.1:3001',
-#     'http://localhost:8000',
-#     'http://127.0.0.1:8000',
-#     'http://127.0.0.1'
+#     'https://localhost:3000',  
+#     'https://127.0.0.1:3000', 
+#     'https://localhost:3001',  
+#     'https://127.0.0.1:3001',
+#     'https://localhost:8000',
+#     'https://127.0.0.1:8000',
+#     'https://127.0.0.1'
 #     ]
 
 ALLOWED_HOSTS = ['*']
@@ -123,7 +123,7 @@ X_FRAME_OPTIONS = 'DENY'
 
 ###############################################
 # Django settings
-SESSION_COOKIE_DOMAIN = '.eu-west-1.awsapprunner.com'
+# SESSION_COOKIE_DOMAIN = '.eu-west-1.awsapprunner.com'
 SESSION_COOKIE_PATH = '/'
 SESSION_COOKIE_SAMESITE = 'None'
 ################################################
@@ -176,26 +176,16 @@ STATICFILES_DIRS = [
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 # CORS_ALLOW_ALL_ORIGINS = True
-# CORS_ALLOWED_ORIGINS = [
-#     'https://main.d1j24jpipbs08c.amplifyapp.com',
-#     'http://localhost:3000',  
-#     'http://127.0.0.1:3000', 
-#     'http://localhost:3001',  
-#     'http://127.0.0.1:3001',
-#     'http://localhost:8000',
-#     'http://127.0.0.1:8000',
-#     'http://127.0.0.1'
-# ]
 
 CORS_ALLOWED_ORIGINS = [
-    'http://main.d1j24jpipbs08c.amplifyapp.com',
-    'http://localhost:3000',
-    'http://127.0.0.1:3000',
-    'http://localhost:3001',
-    'http://127.0.0.1:3001',
-    'http://localhost:8000',
-    'http://127.0.0.1:8000',
-    'http://127.0.0.1',
+    'https://main.d1j24jpipbs08c.amplifyapp.com',
+    'https://localhost:3000',
+    'https://127.0.0.1:3000',
+    'https://localhost:3001',
+    'https://127.0.0.1:3001',
+    'https://localhost:8000',
+    'https://127.0.0.1:8000',
+    'https://127.0.0.1',
 ]
 
 CORS_ALLOW_CREDENTIALS = True
@@ -210,3 +200,9 @@ REST_FRAMEWORK = { ###############################################2
         'rest_framework.authentication.SessionAuthentication'
     }
 }
+
+CSRF_TRUSTED_ORIGINS = [
+    "https://main.d1j24jpipbs08c.amplifyapp.com",
+]
+
+CSRF_COOKIE_SECURE = True  # if using HTTPS, which is highly recommended
