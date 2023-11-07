@@ -27,7 +27,6 @@ from django.views.decorators.csrf import ensure_csrf_cookie, csrf_protect
 from django.utils.decorators import method_decorator
 
 import random
-from django.http import HttpResponse
 
 def find_dict_by_key_value(dict_list, target_key, target_value):
     for dictionary in dict_list:
@@ -312,4 +311,4 @@ class GetRandomView(APIView):
 
     def get(self, request, format=None):
         random_number = random.randint(1, 100)
-        return HttpResponse(random_number)      
+        return Response(random_number)      
