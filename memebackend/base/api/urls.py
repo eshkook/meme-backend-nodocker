@@ -19,5 +19,5 @@ urlpatterns = [
     path('getresponsecount/', views.GetResponseView.as_view()),
     path('authenticated/', views.CheckAuthenticatedView.as_view()),
     path('csrf_cookie/', views.GetCSRFToken.as_view()),
-    path('random/', views.RandomNumberView.as_view()),
+    path('random/', views.GetRandomView.as_view()),
 ]
