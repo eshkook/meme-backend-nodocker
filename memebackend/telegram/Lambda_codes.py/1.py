@@ -37,7 +37,7 @@ def handle_cloudwatch_event(event): # call every round hour between 8:00-17:00 i
     current_time = datetime.now(israel_tz)
 
     # 1. sending an alert to a user about an upcomming appointment
-    if current_time.strftime("%H") <= 16:
+    if int(current_time.strftime("%H")) <= 16:
         next_round_hour_time = current_time.replace(minute=0, second=0, microsecond=0) + timedelta(hours=1)
         next_round_hour_time = next_round_hour_time.strftime("%Y-%m-%d %H:%M")
         item = table.get_item(
@@ -53,7 +53,7 @@ def handle_cloudwatch_event(event): # call every round hour between 8:00-17:00 i
         response = requests.post(sendMessage_url, json=payload)
 
     # 2. delete the outdated slot and chat that has a scheduled appointment to this slot 
-    if current_time.strftime("%H") >= 9: 
+    if int(current_time.strftime("%H")) >= 9: 
         last_round_hour_time = current_time.replace(minute=0, second=0, microsecond=0)
         last_round_hour_time = last_round_hour_time.strftime("%Y-%m-%d %H:%M")
 
@@ -76,7 +76,7 @@ def handle_cloudwatch_event(event): # call every round hour between 8:00-17:00 i
             )
 
     # 3. add next day's slots: (only at 8:00)
-    if current_time.strftime('%A') != "Thursday" and current_time.strftime("%H") == 8:
+    if current_time.strftime('%A') != "Thursday" and int(current_time.strftime("%H")) == 8:
         today_at_8_datetime = current_time.replace(hour=8, minute=0, second=0, microsecond=0) 
         tomorrow_at_8_datetime = today_at_8_datetime + timedelta(days=1)
         slots_list = [tomorrow_at_8_datetime + timedelta(hours=work_hours+1) for work_hours in range(9)]
@@ -91,7 +91,7 @@ def handle_cloudwatch_event(event): # call every round hour between 8:00-17:00 i
                     'appointment_times': slot.strftime('%Y-%m-%d %H:%M') + '-' + (slot + timedelta(hours=1)).strftime('%H:%M')
                 }
             )  
-    if current_time.strftime('%A') == "Thursday" and current_time.strftime("%H") == 8:
+    if current_time.strftime('%A') == "Thursday" and int(current_time.strftime("%H")) == 8:
         today_at_8_datetime = current_time.replace(hour=8, minute=0, second=0, microsecond=0) 
         next_sunday_at_8_datetime = today_at_8_datetime + timedelta(days=3)
         slots_list = [next_sunday_at_8_datetime + timedelta(hours=work_hours+1) for work_hours in range(9)]
@@ -108,11 +108,11 @@ def handle_cloudwatch_event(event): # call every round hour between 8:00-17:00 i
             )         
 
     # 4. delete 2 working days ago chats and close their open suggestions: (only at 17:00) 
-    if current_time.strftime('%A') != "Sunday" and current_time.strftime("%H") == 17:
+    if current_time.strftime('%A') != "Sunday" and int(current_time.strftime("%H")) == 17:
         two_days_ago_time_str = (current_time - timedelta(days=2)).strftime('%Y-%m-%d %H:%M')
         delete_items_and_close_suggestions(two_days_ago_time_str)
 
-    if current_time.strftime('%A') == "Sunday" and current_time.strftime("%H") == 17:
+    if current_time.strftime('%A') == "Sunday" and int(current_time.strftime("%H")) == 17:
         four_days_ago_time_str = (current_time - timedelta(days=4)).strftime('%Y-%m-%d %H:%M')
         delete_items_and_close_suggestions(four_days_ago_time_str)    
 
