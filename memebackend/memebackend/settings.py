@@ -191,22 +191,25 @@ CORS_ALLOW_CREDENTIALS = True
 
 # CORS_ALLOWED_ORIGIN_REGEXES = [] # specify allowed urls with regex
 
-# REST_FRAMEWORK = { ###############################################2
-#     'DEFAULT_PERMISSION_CLASSES': {
-#         'rest_framework.premissions.IsAuthenticated'
-#     },
-#     'DEFAULT_AUTHENTICATION_CLASSES': {
-#         'rest_framework.authentication.SessionAuthentication'
-#     }
+
+# REST_FRAMEWORK = { ############################################################
+#     'DEFAULT_PERMISSION_CLASSES': [
+#         'rest_framework.permissions.IsAuthenticated',
+#     ],
+#     'DEFAULT_AUTHENTICATION_CLASSES': [
+#         'rest_framework.authentication.SessionAuthentication',
+#     ]
 # }
 
-REST_FRAMEWORK = { ############################################################
+REST_FRAMEWORK = {
     'DEFAULT_PERMISSION_CLASSES': [
-        'rest_framework.permissions.IsAuthenticated',
+        'rest_framework.permissions.AllowAny',
     ],
     'DEFAULT_AUTHENTICATION_CLASSES': [
         'rest_framework.authentication.SessionAuthentication',
-    ]
+        'rest_framework.authentication.BasicAuthentication'
+    ],
+    # ... other settings ...
 }
 
 
