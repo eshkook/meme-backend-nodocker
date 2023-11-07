@@ -177,7 +177,7 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 # CORS_ALLOW_ALL_ORIGINS = True
 
 CORS_ALLOWED_ORIGINS = [
-    'https://main.d1j24jpipbs08c.amplifyapp.com',
+    'https://main.d1ul4spnmmg432.amplifyapp.com/',
     'http://localhost:3000',
     'http://127.0.0.1:3000',
     'http://localhost:3001',
@@ -214,7 +214,7 @@ REST_FRAMEWORK = {
 
 
 CSRF_TRUSTED_ORIGINS = [
-    "https://main.d1j24jpipbs08c.amplifyapp.com",
+    'https://main.d1ul4spnmmg432.amplifyapp.com/',
 ]
 
 CSRF_COOKIE_SECURE = True  # if using HTTPS, which is highly recommended

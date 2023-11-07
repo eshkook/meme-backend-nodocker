@@ -20,20 +20,6 @@ sendMessage_url = f"{api_url}/sendMessage"
 edit_url = f"{api_url}/editMessageText"
 delete_url = f"{api_url}/deleteMessage"
 
-# def lambda_handler(event, context):
-#     try:
-#         # Check if the event is from CloudWatch
-#         if 'source' in event and event['source'] == 'aws.events':
-#             handle_cloudwatch_event(event)
-#         else:
-#             handle_telegram_event(event)
-#         return {"statusCode": 200}
-#     except Exception as e:
-#         print(f"An error occurred: {e}")
-#         traceback.print_exc()
-#         return {"statusCode": 200}
-
-
 def lambda_handler(event, context):
     try:
         if "source" in event and event["source"] == "aws.events":
