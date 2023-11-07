@@ -191,14 +191,24 @@ CORS_ALLOW_CREDENTIALS = True
 
 # CORS_ALLOWED_ORIGIN_REGEXES = [] # specify allowed urls with regex
 
-REST_FRAMEWORK = { ###############################################2
-    'DEFAULT_PREMISSION_CLASSES': {
-        'rest_framework.premissions.IsAuthenticated'
-    },
-    'DEFAULT_AUTHENTICATION_CLASSES': {
-        'rest_framework.authentication.SessionAuthentication'
-    }
+# REST_FRAMEWORK = { ###############################################2
+#     'DEFAULT_PERMISSION_CLASSES': {
+#         'rest_framework.premissions.IsAuthenticated'
+#     },
+#     'DEFAULT_AUTHENTICATION_CLASSES': {
+#         'rest_framework.authentication.SessionAuthentication'
+#     }
+# }
+
+REST_FRAMEWORK = { ############################################################
+    'DEFAULT_PERMISSION_CLASSES': [
+        'rest_framework.permissions.IsAuthenticated',
+    ],
+    'DEFAULT_AUTHENTICATION_CLASSES': [
+        'rest_framework.authentication.SessionAuthentication',
+    ]
 }
+
 
 CSRF_TRUSTED_ORIGINS = [
     "https://main.d1j24jpipbs08c.amplifyapp.com",
