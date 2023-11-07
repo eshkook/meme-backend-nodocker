@@ -26,6 +26,9 @@ from django.contrib import auth
 from django.views.decorators.csrf import ensure_csrf_cookie, csrf_protect
 from django.utils.decorators import method_decorator
 
+import random
+from django.http import HttpResponse
+
 def find_dict_by_key_value(dict_list, target_key, target_value):
     for dictionary in dict_list:
         if dictionary.get(target_key) == target_value:
@@ -303,5 +306,10 @@ class GetResponseView(APIView):
     def post(self, request, format=None):
         count = request.data.get('count')
         return JsonResponse({'count': count+1}) 
-      
-      
+            
+class GetRandomView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, format=None):
+        random_number = random.randint(1, 100)
+        return HttpResponse(random_number)      

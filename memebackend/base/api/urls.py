@@ -18,5 +18,6 @@ urlpatterns = [
     # path('getresponsecount/', views.get_response_count),
     path('getresponsecount/', views.GetResponseView.as_view()),
     path('authenticated/', views.CheckAuthenticatedView.as_view()),
-    path('csrf_cookie/', views.GetCSRFToken.as_view())
+    path('csrf_cookie/', views.GetCSRFToken.as_view()),
+    path('random/', views.RandomNumberView.as_view()),
 ]
