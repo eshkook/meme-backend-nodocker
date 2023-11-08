@@ -63,7 +63,7 @@ def handle_cloudwatch_event(
         }
         response = requests.post(sendMessage_url, json=payload)
 
-    # 2. delete the outdated slot and chat that has a scheduled appointment to this slot
+    # 2. delete the outdated slot and chat that has a scheduled appointment to this slot (the chat deletion dosnt work)??????????????
     if int(current_time.strftime("%H")) >= 9:
         last_round_hour_time = current_time.replace(minute=0, second=0, microsecond=0)
         last_round_hour_time = last_round_hour_time.strftime("%Y-%m-%d %H:%M")
