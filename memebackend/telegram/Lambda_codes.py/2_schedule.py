@@ -47,7 +47,7 @@ def handle_cloudwatch_event(
 ):  # call every round hour between 8:00-17:00 inclusive
     current_time = datetime.now(israel_tz)
 
-    # 1. sending an alert to a user about an upcomming appointment
+    # 1. sending an alert to a user about an upcomming appointment 
     if int(current_time.strftime("%H")) <= 16:
         next_round_hour_time = current_time.replace(
             minute=0, second=0, microsecond=0
@@ -199,8 +199,6 @@ def handle_items_from_response(response):
 
 def handle_telegram_event(event):
     body = json.loads(event["body"])
-    chat_id = None
-    query_data = None
 
     if "message" in body:
         chat_id = body["message"]["chat"]["id"]

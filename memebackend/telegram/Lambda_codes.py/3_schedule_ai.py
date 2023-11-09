@@ -1,21 +1,34 @@
 import boto3
 import json
 import requests
-import traceback  
+import traceback
 from boto3.dynamodb.conditions import Attr
+from datetime import datetime, timedelta
+import dateutil.tz
+import time
+from timeout_decorator import timeout
+import openai
+
+# gpt should categorize to one of the following:
+# schedule
+# reschedule
+# cancel
+# information about scheduled appointment
+# other
 
 # AWS DynamoDB setup
-region_name = '????????'
-table_name = '???????????????????'
-dynamodb = boto3.resource('dynamodb', region_name=region_name)
+region_name = "eu-west-1"
+table_name = "botox_3_table"
+dynamodb = boto3.resource("dynamodb", region_name=region_name)
 table = dynamodb.Table(table_name)
+israel_tz = dateutil.tz.gettz("Asia/Jerusalem")
 
 # Telegram setup
-telegram_token = '????????????????'
-api_url = f'https://api.telegram.org/bot{telegram_token}'
-sendMessage_url = f'{api_url}/sendMessage'
-edit_url = f'{api_url}/editMessageText'
-delete_url = f'{api_url}/deleteMessage'
+telegram_token = "6467965504:AAHoFv-gir5CNKY8ZJvD-oaj0yYwseuTMmg"
+api_url = f"https://api.telegram.org/bot{telegram_token}"
+sendMessage_url = f"{api_url}/sendMessage"
+edit_url = f"{api_url}/editMessageText"
+delete_url = f"{api_url}/deleteMessage"
 
 def lambda_handler(event, context):
     try:
@@ -40,7 +53,7 @@ def handle_react_app_event(event):
     }
     
 def handle_cloudwatch_event(event): 
-    # handle event logic
+    pass
 
 def handle_telegram_event(event):
     body = json.loads(event['body'])
@@ -53,7 +66,14 @@ def handle_telegram_event(event):
         username = user_info.get('username', '')
         full_name = user_info.get('first_name', '') + " " + user_info.get('last_name', '')   
 
-        # handle message logic
+        if user_message == '/start':
+            handle_start(chat_id)
+        elif len(user_message) > 200:
+            handle_long_messages(chat_id)
+        else:    
+            pass
+
+
 
     elif 'callback_query' in body:
         chat_id = body['callback_query']['message']['chat']['id']
@@ -65,3 +85,31 @@ def handle_telegram_event(event):
 
         # handle query logic
           
+def handle_start(chat_id):
+    payload = {
+                    "chat_id": str(chat_id),
+                    "text": "שלום! מה תרצה לעשות ?",
+                }
+    response = requests.post(sendMessage_url, json=payload)
+
+def handle_long_messages(chat_id):
+    payload = {
+                    "chat_id": str(chat_id),
+                    "text": "אנא כתוב הודעות קצרות יותר",
+                }
+    response = requests.post(sendMessage_url, json=payload)    
+
+@timeout(10)
+def chat_with_gpt(input):
+    instructions = '' 
+    messages = [
+        {"role": "system", "content": instructions},
+        {"role": "user", "content": input},
+    ]
+    response = openai.ChatCompletion.create(
+        model='gpt-3.5-turbo',
+        messages=messages,
+        temperature=0,
+        max_tokens=20
+    )
+    return response.choices[0].message['content']    
