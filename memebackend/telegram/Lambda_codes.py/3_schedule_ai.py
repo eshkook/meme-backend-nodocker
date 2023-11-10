@@ -127,7 +127,13 @@ def handle_standard_messages(chat_id, user_message):
 def chat_with_gpt(input):
     instructions = '''
     which of the following does the input relate to: 
-    Schedule an appointment/Reschedule an appointment/Cancel an appointment/Find out appointment time/Other
+    Schedule an appointment/
+    Reschedule an appointment/
+    Cancel an appointment/
+    Find out appointment time/
+    Find out if appointment exists/
+    Other.
+    In your response always include only one of the options above (and in English).
     '''
     messages = [
         {"role": "system", "content": instructions},
