@@ -16,6 +16,7 @@ items = response['Items']
 sorted_items = sorted(items, key=lambda x: x['id'])
 
 for item in items:
+    print(item['username'])
     print(item)
  
 response = table.scan(

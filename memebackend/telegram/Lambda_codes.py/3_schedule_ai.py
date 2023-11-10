@@ -9,13 +9,6 @@ import time
 from timeout_decorator import timeout
 import openai
 
-# gpt should categorize to one of the following:
-# schedule
-# reschedule
-# cancel
-# information about scheduled appointment
-# other
-
 # AWS DynamoDB setup
 region_name = "eu-west-1"
 table_name = "botox_3_table"
@@ -29,6 +22,8 @@ api_url = f"https://api.telegram.org/bot{telegram_token}"
 sendMessage_url = f"{api_url}/sendMessage"
 edit_url = f"{api_url}/editMessageText"
 delete_url = f"{api_url}/deleteMessage"
+
+openai.api_key = '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' 
 
 def lambda_handler(event, context):
     try:
@@ -71,10 +66,8 @@ def handle_telegram_event(event):
         elif len(user_message) > 200:
             handle_long_messages(chat_id)
         else:    
-            pass
-
-
-
+            handle_standard_messages(chat_id, user_message)
+            
     elif 'callback_query' in body:
         chat_id = body['callback_query']['message']['chat']['id']
         query_data = body['callback_query']['data']
@@ -97,11 +90,19 @@ def handle_long_messages(chat_id):
                     "chat_id": str(chat_id),
                     "text": "אנא כתוב הודעות קצרות יותר",
                 }
-    response = requests.post(sendMessage_url, json=payload)    
+    response = requests.post(sendMessage_url, json=payload)
+
+def handle_standard_messages(chat_id, user_message):
+    response_text = chat_with_gpt(user_message)
+    payload = {
+                    "chat_id": str(chat_id),
+                    "text": response_text,
+                }
+    response = requests.post(sendMessage_url, json=payload)          
 
 @timeout(10)
 def chat_with_gpt(input):
-    instructions = '' 
+    instructions = 'which of the following does the input relate to: Schedule an appointment/Reschedule an appointment/Canceling an appointment/Other' 
     messages = [
         {"role": "system", "content": instructions},
         {"role": "user", "content": input},
