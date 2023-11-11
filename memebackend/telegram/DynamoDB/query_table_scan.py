@@ -16,22 +16,21 @@ items = response['Items']
 sorted_items = sorted(items, key=lambda x: x['id'])
 
 for item in items:
-    print(item['username'])
     print(item)
  
-response = table.scan(
-    FilterExpression=Attr('chat_id').exists() & Attr('chat_id').ne(None)
-)
-scheduled_slots = response.get('Items', [])
+# response = table.scan(
+#     FilterExpression=Attr('chat_id').exists() & Attr('chat_id').ne(None)
+# )
+# scheduled_slots = response.get('Items', [])
 
-if scheduled_slots:
-    sorted_scheduled_slots = sorted(scheduled_slots, key=lambda x: x['appointment_times'])
-    calendar_summary = "Calendar:"
-    for scheduled_slot in sorted_scheduled_slots:
-        calendar_summary += f"\n\nappointment_times: {scheduled_slot['appointment_times']}\nusername: {scheduled_slot['username']}\nfull_name: {scheduled_slot['full_name']}"
-else:
-    calendar_summary = "No scheduled appointments."
+# if scheduled_slots:
+#     sorted_scheduled_slots = sorted(scheduled_slots, key=lambda x: x['appointment_times'])
+#     calendar_summary = "Calendar:"
+#     for scheduled_slot in sorted_scheduled_slots:
+#         calendar_summary += f"\n\nappointment_times: {scheduled_slot['appointment_times']}\nusername: {scheduled_slot['username']}\nfull_name: {scheduled_slot['full_name']}"
+# else:
+#     calendar_summary = "No scheduled appointments."
 
-print(calendar_summary)  
+# print(calendar_summary)  
 
           

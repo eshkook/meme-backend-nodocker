@@ -39,6 +39,8 @@ delete_url = f"{api_url}/deleteMessage"
 
 openai.api_key = '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' 
 
+gpt_use_limit_per_user_per_day = 3
+
 def lambda_handler(event, context):
     try:
         if "source" in event and event["source"] == "aws.events":
@@ -62,6 +64,7 @@ def handle_react_app_event(event):
     }
     
 def handle_cloudwatch_event(event): 
+    # daily delete the users or zeroing their gpt_use_counter
     pass
 
 def handle_telegram_event(event):
@@ -80,9 +83,40 @@ def handle_telegram_event(event):
             handle_start(chat_id)
         elif len(user_message) > 200:
             handle_long_messages(chat_id)
-        else:    
-            handle_standard_messages(chat_id, user_message)
-            
+        else: 
+            # check if user_id exists in database:
+            item = table.get_item(Key={"id": str(user_id)})
+            item = item.get("Item") 
+            if item:
+                # user_id exists, now check if limit was exceeded:
+                gpt_use_counter = item['gpt_use_counter']
+                if gpt_use_counter < gpt_use_limit_per_user_per_day:
+                    # then we can use gpt and update the use counter:
+                    handle_standard_messages(chat_id, user_message)
+                    table.update_item(
+                        Key={
+                            "id": str(user_id),
+                        },
+                        UpdateExpression="SET gpt_use_counter = :new_gpt_use_counter",
+                        ExpressionAttributeValues={":new_gpt_use_counter": gpt_use_counter + 1},
+                    )
+                else:
+                    # tell the user they exceeded daily use limit
+                    payload = {
+                        "chat_id": chat_id,
+                        "text": "חרגת מהשימוש היומי",
+                    }
+                    response = requests.post(sendMessage_url, json=payload)
+            else:
+                # user_id is not in database, let's create it and respond the user
+                handle_standard_messages(chat_id, user_message)
+                table.put_item(
+                    Item={
+                        "id": str(user_id),
+                        "gpt_use_counter": 1,
+                    }
+                )            
+
     elif 'callback_query' in body:
         chat_id = body['callback_query']['message']['chat']['id']
         query_data = body['callback_query']['data']
@@ -96,14 +130,14 @@ def handle_telegram_event(event):
           
 def handle_start(chat_id):
     payload = {
-                    "chat_id": str(chat_id),
+                    "chat_id": chat_id,
                     "text": "שלום! מה תרצה לעשות ?",
                 }
     response = requests.post(sendMessage_url, json=payload)
 
 def handle_long_messages(chat_id):
     payload = {
-                    "chat_id": str(chat_id),
+                    "chat_id": chat_id,
                     "text": "אנא כתוב הודעות קצרות יותר",
                 }
     response = requests.post(sendMessage_url, json=payload)
@@ -120,9 +154,9 @@ def handle_standard_messages(chat_id, user_message):
             time.sleep(1)
 
     payload = {
-                    "chat_id": str(chat_id),
+                    "chat_id": chat_id,
                     "text": response_text,
-                }
+               }
     response = requests.post(sendMessage_url, json=payload)          
 
 @timeout(5)
