@@ -74,6 +74,7 @@ def handle_telegram_event(event):
         user_info = body['message']['from']
         username = user_info.get('username', '')
         full_name = user_info.get('first_name', '') + " " + user_info.get('last_name', '')   
+        user_id = user_info['id']
 
         if user_message == '/start':
             handle_start(chat_id)
@@ -88,7 +89,8 @@ def handle_telegram_event(event):
         message_id = body['callback_query']['message']['message_id'] 
         user_info = body['callback_query']['message']['from']
         username = user_info.get('username', '')
-        full_name = user_info.get('first_name', '') + " " + user_info.get('last_name', '')    
+        full_name = user_info.get('first_name', '') + " " + user_info.get('last_name', '')
+        user_id = user_info['id']    
 
         # handle query logic
           

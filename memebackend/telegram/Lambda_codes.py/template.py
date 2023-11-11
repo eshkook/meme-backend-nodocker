@@ -19,13 +19,13 @@ delete_url = f'{api_url}/deleteMessage'
 
 def lambda_handler(event, context):
     try:
-        if "source" in event and event["source"] == "aws.events":
+        if 'source' in event and event['source'] == 'aws.events':
             handle_cloudwatch_event(event)
-        elif "httpMethod" in event:
+        elif 'httpMethod' in event and event['headers'].get('Content-Type') == 'application/json':
             return handle_react_app_event(event)
         else:
             handle_telegram_event(event)
-
+            
         return {"statusCode": 200, "body": json.dumps("Success")}
     except Exception as e:
         print(f"An error occurred: {e}")
@@ -38,9 +38,9 @@ def handle_react_app_event(event):
         "statusCode": 200,
         "body": json.dumps(9)  # Converts the number 9 into a JSON-formatted string
     }
-    
+
 def handle_cloudwatch_event(event): 
-    # handle event logic
+    pass
 
 def handle_telegram_event(event):
     body = json.loads(event['body'])
@@ -52,6 +52,7 @@ def handle_telegram_event(event):
         user_info = body['message']['from']
         username = user_info.get('username', '')
         full_name = user_info.get('first_name', '') + " " + user_info.get('last_name', '')   
+        user_id = user_info['id']
 
         # handle message logic
 
@@ -62,6 +63,6 @@ def handle_telegram_event(event):
         user_info = body['callback_query']['message']['from']
         username = user_info.get('username', '')
         full_name = user_info.get('first_name', '') + " " + user_info.get('last_name', '')    
+        user_id = user_info['id']
 
         # handle query logic
-          
