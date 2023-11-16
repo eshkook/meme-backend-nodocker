@@ -21,8 +21,6 @@ def lambda_handler(event, context):
     try:
         if 'source' in event and event['source'] == 'aws.events':
             handle_cloudwatch_event(event)
-        elif 'httpMethod' in event and event['headers'].get('Content-Type') == 'application/json':
-            return handle_react_app_event(event)
         else:
             handle_telegram_event(event)
             
@@ -31,13 +29,6 @@ def lambda_handler(event, context):
         print(f"An error occurred: {e}")
         traceback.print_exc()
         return {"statusCode": 500, "body": json.dumps("Error")}
-
-def handle_react_app_event(event):
-    # handle react logic
-    return {
-        "statusCode": 200,
-        "body": json.dumps(9)  # Converts the number 9 into a JSON-formatted string
-    }
 
 def handle_cloudwatch_event(event): 
     pass
