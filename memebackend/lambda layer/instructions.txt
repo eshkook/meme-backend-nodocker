@@ -1,0 +1,22 @@
+﻿# installations inside the python folder:
+pip install requests -t .
+pip install timeout_decorator -t .
+pip install openai==0.28 -t .
+
+# compress:
+Compress-Archive -Path .\python\* -DestinationPath my-layer.zip
+
+# Use AWS CLI to publish layer (ensure AWS CLI is configured)
+aws lambda publish-layer-version --layer-name my-custom-layer --zip-file fileb://my-layer.zip --compatible-runtimes python3.9
+
+# check current layer version number (to put at the end of the last command below)
+aws lambda list-layer-versions --layer-name my-custom-layer
+
+# check aws account id (to put in the last command below, where there is a long number)
+aws sts get-caller-identity
+
+# Use AWS CLI to attach the layer to your Lambda function (replace placeholders with actual values)
+aws lambda update-function-configuration --function-name botox_function --layers arn:aws:lambda:eu-west-1:168068110538:layer:my-custom-layer:1
+
+
+
