@@ -1,10 +1,9 @@
-
-
 #  creating a deployment package with dependencies:
 # pip install requests -t .                 
 # pip install timeout_decorator -t .
-# pip install openai -t .    /     pip install openai==0.28 -t .
-# then zip all files in this directory besides urllib stuff, and upload to aws lambda
+# pip install openai==0.28 -t .
+
+# then zip all files in this directory besides urllib stuff, and upload to aws lambda:
 
 # zip in powershell with command: 
 # Get-ChildItem -Path . | Where-Object { $_.Name -notlike 'function.zip' } | Compress-Archive -DestinationPath function.zip -Force
