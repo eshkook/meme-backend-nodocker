@@ -1,5 +1,5 @@
 #  creating a deployment package with dependencies:
-# pip install requests -t .                 
+# pip install ????? -t .                 
 
 # then zip all files in this directory besides urllib stuff, and upload to aws lambda:
 
@@ -12,8 +12,6 @@
 from botocore.exceptions import ClientError
 import boto3
 import json
-import requests
-import traceback
 from boto3.dynamodb.conditions import Attr
 
 # AWS DynamoDB setup
@@ -30,6 +28,8 @@ def lambda_handler(event, context):
         return handle_signup(body)
     elif action == 'confirm':
         return handle_confirmation(body)
+    elif action == 'login':
+        return handle_login(body)
     else:
         return {'statusCode': 400, 'body': json.dumps('Invalid action')}
 
@@ -73,4 +73,30 @@ def handle_confirmation(body):
     except ClientError as e:
         return {'statusCode': 400, 'body': json.dumps(e.response['Error']['Message'])}
 
+def handle_login(body):
+    email = body['email']
+    password = body['password']
 
+    client = boto3.client('cognito-idp')
+    client_id = '6be5bmss0rg7krjk5rd6dt28uc'
+
+    try:
+        response = client.admin_initiate_auth(
+            UserPoolId='eu-west-1_BZy97DfFY',
+            ClientId=client_id,
+            AuthFlow='ADMIN_NO_SRP_AUTH',
+            AuthParameters={
+                'USERNAME': email,
+                'PASSWORD': password
+            }
+        )
+        return {
+            'statusCode': 200,
+            'body': json.dumps({
+                'id_token': response['AuthenticationResult']['IdToken'],
+                'access_token': response['AuthenticationResult']['AccessToken'],
+                'refresh_token': response['AuthenticationResult']['RefreshToken']
+            })
+        }
+    except ClientError as e:
+        return {'statusCode': 400, 'body': json.dumps(e.response['Error']['Message'])}
