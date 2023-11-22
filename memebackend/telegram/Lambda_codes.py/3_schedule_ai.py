@@ -1,16 +1,3 @@
-#  creating a deployment package with dependencies:
-# pip install requests -t .                 
-# pip install timeout_decorator -t .
-# pip install openai==0.28 -t .
-
-# then zip all files in this directory besides urllib stuff, and upload to aws lambda:
-
-# zip in powershell with command: 
-# Get-ChildItem -Path . | Where-Object { $_.Name -notlike 'function.zip' } | Compress-Archive -DestinationPath function.zip -Force
-
-# deploy this zip to aws lambda with command: 
-# aws lambda update-function-code --function-name botox_function --zip-file fileb://function.zip
-
 import boto3
 import json
 import requests
