@@ -90,13 +90,31 @@ def handle_login(body):
                 'PASSWORD': password
             }
         )
+
+        id_token = response['AuthenticationResult']['IdToken']
+        access_token = response['AuthenticationResult']['AccessToken']
+        refresh_token = response['AuthenticationResult']['RefreshToken']
+
+        # Construct cookie strings
+        # For local development (no 'Secure' attribute)
+        id_cookie = f'id_token={id_token}; HttpOnly; Path=/; SameSite=Strict'
+        access_cookie = f'access_token={access_token}; HttpOnly; Path=/; SameSite=Strict'
+        refresh_cookie = f'refresh_token={refresh_token}; HttpOnly; Path=/; SameSite=Strict'
+
+        # Uncomment the following lines for production (with 'Secure' attribute)
+        # id_cookie = f'id_token={id_token}; HttpOnly; Secure; Path=/; SameSite=Strict'
+        # access_cookie = f'access_token={access_token}; HttpOnly; Secure; Path=/; SameSite=Strict'
+        # refresh_cookie = f'refresh_token={refresh_token}; HttpOnly; Secure; Path=/; SameSite=Strict'
+
+        # Concatenate cookies for the header
+        cookie_header = f'{id_cookie}, {access_cookie}, {refresh_cookie}'
+
         return {
             'statusCode': 200,
-            'body': json.dumps({
-                'id_token': response['AuthenticationResult']['IdToken'],
-                'access_token': response['AuthenticationResult']['AccessToken'],
-                'refresh_token': response['AuthenticationResult']['RefreshToken']
-            })
+            'headers': {
+                'Set-Cookie': cookie_header
+            },
+            'body': json.dumps('Login successful')
         }
     except ClientError as e:
         return {'statusCode': 400, 'body': json.dumps(e.response['Error']['Message'])}
