@@ -54,12 +54,6 @@ def handle_signup(body):
             ]
         )
         return {'statusCode': 200,
-                # 'headers': {
-                #     'Access-Control-Allow-Origin': 'http://localhost:3000',
-                #     'Access-Control-Allow-Methods': 'OPTIONS,POST,GET',
-                #     'Access-Control-Allow-Headers': 'Content-Type',
-                #     'Access-Control-Allow-Credentials': 'true'
-                # },
                 'body': json.dumps('User registration successful.')}
     except ClientError as e:
         return {'statusCode': 400, 'body': json.dumps(e.response['Error']['Message'])}
@@ -125,3 +119,4 @@ def handle_login(body):
         }
     except ClientError as e:
         return {'statusCode': 400, 'body': json.dumps(e.response['Error']['Message'])}
+
