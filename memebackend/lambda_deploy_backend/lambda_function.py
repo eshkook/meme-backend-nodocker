@@ -81,43 +81,47 @@ def handle_login(body):
     client = boto3.client('cognito-idp')
     client_id = '6be5bmss0rg7krjk5rd6dt28uc'
 
-    # try:
-    response = client.admin_initiate_auth(
-        UserPoolId='eu-west-1_BZy97DfFY',
-        ClientId=client_id,
-        AuthFlow='ADMIN_NO_SRP_AUTH',
-        AuthParameters={
-            'USERNAME': email,
-            'PASSWORD': password
+    try:
+        response = client.admin_initiate_auth(
+            UserPoolId='eu-west-1_BZy97DfFY',
+            ClientId=client_id,
+            AuthFlow='ADMIN_NO_SRP_AUTH',
+            AuthParameters={
+                'USERNAME': email,
+                'PASSWORD': password
+            }
+        )
+
+        id_token = response['AuthenticationResult']['IdToken']
+        access_token = response['AuthenticationResult']['AccessToken']
+        refresh_token = response['AuthenticationResult']['RefreshToken']
+
+        # Construct cookie strings
+        # For local development (no 'Secure' attribute)
+        # id_cookie = f'id_token={id_token}; HttpOnly; Path=/; SameSite=None'
+        # access_cookie = f'access_token={access_token}; HttpOnly; Path=/; SameSite=None'
+        # refresh_cookie = f'refresh_token={refresh_token}; HttpOnly; Path=/; SameSite=None'
+
+        # Uncomment the following lines for production (with 'Secure' attribute)
+        id_cookie = f'id_token={id_token}; Secure; Path=/; SameSite=None'
+        access_cookie = f'access_token={access_token}; Secure; Path=/; SameSite=None'
+        refresh_cookie = f'refresh_token={refresh_token}; Secure; Path=/; SameSite=None'
+
+        # id_cookie = f'id_token={id_token}; HttpOnly; Secure; Path=/; SameSite=None'
+        # access_cookie = f'access_token={access_token}; HttpOnly; Secure; Path=/; SameSite=None'
+        # refresh_cookie = f'refresh_token={refresh_token}; HttpOnly; Secure; Path=/; SameSite=None'
+
+        # Concatenate cookies for the header
+        cookie_header = f'{id_cookie}, {access_cookie}, {refresh_cookie}'
+
+        return {
+            'statusCode': 200,
+            'headers': {
+                'Set-Cookie': cookie_header
+            },
+            'body': json.dumps('Login successful')
         }
-    )
-
-    id_token = response['AuthenticationResult']['IdToken']
-    access_token = response['AuthenticationResult']['AccessToken']
-    refresh_token = response['AuthenticationResult']['RefreshToken']
-
-    # Construct cookie strings
-    # For local development (no 'Secure' attribute)
-    id_cookie = f'id_token={id_token}; HttpOnly; Path=/; SameSite=Strict'
-    access_cookie = f'access_token={access_token}; HttpOnly; Path=/; SameSite=Strict'
-    refresh_cookie = f'refresh_token={refresh_token}; HttpOnly; Path=/; SameSite=Strict'
-
-    # Uncomment the following lines for production (with 'Secure' attribute)
-    # id_cookie = f'id_token={id_token}; HttpOnly; Secure; Path=/; SameSite=Strict'
-    # access_cookie = f'access_token={access_token}; HttpOnly; Secure; Path=/; SameSite=Strict'
-    # refresh_cookie = f'refresh_token={refresh_token}; HttpOnly; Secure; Path=/; SameSite=Strict'
-
-    # Concatenate cookies for the header
-    cookie_header = f'{id_cookie}, {access_cookie}, {refresh_cookie}'
-
-    return {
-        'statusCode': 200,
-        'headers': {
-            'Set-Cookie': cookie_header
-        },
-        'body': json.dumps('Login successful')
-    }
-    # except ClientError as e:
-    #     return {'statusCode': 400, 'body': json.dumps(e.response['Error']['Message'])}
+    except ClientError as e:
+        return {'statusCode': 400, 'body': json.dumps(e.response['Error']['Message'])}
 
     
