@@ -121,7 +121,7 @@ def handle_login(body):
         return {
             'statusCode': 200,
             'headers': {
-                'Set-Cookie': access_cookie
+                'Set-Cookie': refresh_cookie
             },
             'body': json.dumps('Login successful')
         }

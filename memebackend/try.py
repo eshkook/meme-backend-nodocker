@@ -17,8 +17,8 @@
 # 272 Alcohol Tours - v
 # 290 Bus Tours - 
 
-b=[1, 2, 3, 900, 4, 6, 7, 5, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 400, 21, 24, 25, 26, 27, 28, 29, 30, 31, 800, 32, 33, 35, 34, 300, 700, 200, 1100, 100, 1000, 500]
-print(sorted(b))
+# b=[1, 2, 3, 900, 4, 6, 7, 5, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 400, 21, 24, 25, 26, 27, 28, 29, 30, 31, 800, 32, 33, 35, 34, 300, 700, 200, 1100, 100, 1000, 500]
+# print(sorted(b))
 
 # missing 2 level:
 # 8 History and archeology (3 exists) - v
@@ -27,3 +27,8 @@ print(sorted(b))
 # 36 hockey
 # 37 american football
 # 38 Baseball
+import numpy as np
+a=np.nan
+print(a)
+if np.nan:
+    print(9)
