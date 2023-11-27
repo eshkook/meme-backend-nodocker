@@ -103,9 +103,9 @@ def handle_login(body):
         # refresh_cookie = f'refresh_token={refresh_token}; HttpOnly; Path=/; SameSite=None'
 
         # Uncomment the following lines for production (with 'Secure' attribute)
-        id_cookie = f'id_token={id_token}; Secure; Path=/; SameSite=None'
-        access_cookie = f'access_token={access_token}; Secure; Path=/; SameSite=None'
-        refresh_cookie = f'refresh_token={refresh_token}; Secure; Path=/; SameSite=None'
+        id_cookie = f'id_token={id_token}; HttpOnly; Secure; Path=/; SameSite=None'
+        access_cookie = f'access_token={access_token}; HttpOnly; Secure; Path=/; SameSite=None'
+        refresh_cookie = f'refresh_token={refresh_token}; HttpOnly; Secure; Path=/; SameSite=None'
 
         # id_cookie = f'id_token={id_token}; HttpOnly; Secure; Path=/; SameSite=None'
         # access_cookie = f'access_token={access_token}; HttpOnly; Secure; Path=/; SameSite=None'
@@ -121,6 +121,17 @@ def handle_login(body):
             },
             'body': json.dumps('Login successful')
         }
+
+        # return {
+        #     'statusCode': 200,
+        #     'headers': {
+        #         'Set-Cookie': cookie_header,
+        #         'Access-Control-Allow-Origin': 'https://main.d2sw1m24xot5cm.amplifyapp.com/',  
+        #         'Access-Control-Allow-Credentials': 'true'  
+        #     },
+        #     'body': json.dumps('Login successful')
+        # }
+
     except ClientError as e:
         return {'statusCode': 400, 'body': json.dumps(e.response['Error']['Message'])}
 
