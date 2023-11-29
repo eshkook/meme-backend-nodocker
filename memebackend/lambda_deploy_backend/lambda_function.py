@@ -40,7 +40,7 @@ def handle_signup(body):
     password = body['password']
 
     client = boto3.client('cognito-idp')
-    user_pool_id = 'eu-west-1_BZy97DfFY'
+    # user_pool_id = 'eu-west-1_BZy97DfFY'
     client_id = '6be5bmss0rg7krjk5rd6dt28uc'
 
     try:
@@ -129,23 +129,19 @@ def handle_login(body):
         return {'statusCode': 400, 'body': json.dumps(e.response['Error']['Message'])}
 
 def handle_login_confirmation(body):
+    # Assuming access_token is sent in the body, though usually it's in the header
     access_token = body.get('access_token')
 
     if not access_token:
         return {'statusCode': 400, 'body': json.dumps('No access token provided')}
 
     client = boto3.client('cognito-idp')
-    user_pool_id = 'YOUR_USER_POOL_ID'
 
     try:
         # Using GetUser to validate the access token
-        response = client.get_user(
-            AccessToken=access_token
-        )
+        response = client.get_user(AccessToken=access_token)
         return {'statusCode': 200, 'body': json.dumps('You are indeed logged in')}
 
-    except client.exceptions.NotAuthorizedException:
-        return {'statusCode': 401, 'body': json.dumps('Login validation failed')}
-
-    except Exception as e:
-        return {'statusCode': 500, 'body': json.dumps(str(e))}
+    except ClientError as e:
+        # Return a 400 status code for any client error from AWS SDK
+        return {'statusCode': 400, 'body': json.dumps(e.response['Error']['Message'])}
