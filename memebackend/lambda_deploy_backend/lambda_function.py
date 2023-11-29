@@ -147,21 +147,7 @@ def handle_login(body):
 #         return {'statusCode': 400, 'body': json.dumps(e.response['Error']['Message'])}
 
 def handle_logout(body):
-    # Assuming we are using cookies for session management,
-    # so there's no need to get a token from the body.
-
     try:
-        # Perform any necessary actions to handle logout.
-        # This might include logging the event, updating user status in your system, etc.
-        # AWS Cognito itself doesn't require an action on the server to 'log out'.
-
-        # Clearing the cookies in the client response to invalidate the session.
-        # clear_cookies_header = {
-        #     'Set-Cookie': 'access_token=; HttpOnly; Secure; Path=/; SameSite=None; Max-Age=0',
-        #     'Set-Cookie': 'id_token=; HttpOnly; Secure; Path=/; SameSite=None; Max-Age=0',
-        #     'Set-Cookie': 'refresh_token=; HttpOnly; Secure; Path=/; SameSite=None; Max-Age=0',
-        # }
-
         access_cookie = f'access_token=; HttpOnly; Secure; Path=/; SameSite=None'
 
         return {
@@ -169,7 +155,7 @@ def handle_logout(body):
             'headers': {
                 'Set-Cookie': access_cookie
             },
-            'body': json.dumps('Login successful')
+            'body': json.dumps('Logout successful')
         }
 
     except ClientError as e:
