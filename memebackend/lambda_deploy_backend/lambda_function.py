@@ -30,8 +30,10 @@ def lambda_handler(event, context):
         return handle_confirmation(body)
     elif action == 'login':
         return handle_login(body)
-    elif action == 'login_confirmation':
-        return handle_login(body)
+    elif action == 'logout':
+        return handle_logout(body)
+    elif action == 'delete':
+        return handle_delete(body)
     else:
         return {'statusCode': 400, 'body': json.dumps('Invalid action')}
 
@@ -128,24 +130,6 @@ def handle_login(body):
     except ClientError as e:
         return {'statusCode': 400, 'body': json.dumps(e.response['Error']['Message'])}
 
-# def handle_login_confirmation(body):
-#     # Assuming access_token is sent in the body, though usually it's in the header
-#     access_token = body.get('access_token')
-
-#     if not access_token:
-#         return {'statusCode': 400, 'body': json.dumps('No access token provided')}
-
-#     client = boto3.client('cognito-idp')
-
-#     try:
-#         # Using GetUser to validate the access token
-#         response = client.get_user(AccessToken=access_token)
-#         return {'statusCode': 200, 'body': json.dumps('You are indeed logged in')}
-
-#     except ClientError as e:
-#         # Return a 400 status code for any client error from AWS SDK
-#         return {'statusCode': 400, 'body': json.dumps(e.response['Error']['Message'])}
-
 def handle_logout(body):
     try:
         access_cookie = f'access_token=; HttpOnly; Secure; Path=/; SameSite=None'
@@ -160,4 +144,36 @@ def handle_logout(body):
 
     except ClientError as e:
         # Return a 400 status code for any client error from AWS SDK
+        return {'statusCode': 400, 'body': json.dumps(e.response['Error']['Message'])}
+    
+def handle_delete(body):
+    access_token = body.get('access_token')
+
+    if not access_token:
+        return {'statusCode': 400, 'body': json.dumps('No access token provided')}
+
+    client = boto3.client('cognito-idp')
+
+    try:
+        # Validate the access token and get the username
+        user_info = client.get_user(AccessToken=access_token)
+        username = user_info['Username']
+
+        # Delete the user from Cognito user pool
+        client.admin_delete_user(
+            UserPoolId='eu-west-1_BZy97DfFY',
+            Username=username
+        )
+
+        access_cookie = f'access_token=; HttpOnly; Secure; Path=/; SameSite=None'
+
+        return {
+        'statusCode': 200,
+        'headers': {
+            'Set-Cookie': access_cookie
+        },
+        'body': json.dumps('Account Deletion Successful')
+    }
+
+    except ClientError as e:
         return {'statusCode': 400, 'body': json.dumps(e.response['Error']['Message'])}
