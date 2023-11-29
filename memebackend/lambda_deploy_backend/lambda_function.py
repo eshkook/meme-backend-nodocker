@@ -96,14 +96,9 @@ def handle_login(body):
         access_token = response['AuthenticationResult']['AccessToken']
         refresh_token = response['AuthenticationResult']['RefreshToken']
 
-        print(111111111111111111111)
-        print(id_token)
-
-        print(222222222222222)
-        print(access_token)
-
-        print(333333333333333333)
-        print(refresh_token)
+        print('id_token: ', id_token)
+        print('access_token: ', access_token)
+        print('refresh_token: ', refresh_token)
 
         # For local development (no 'Secure' attribute)
         # id_cookie = f'id_token={id_token}; HttpOnly; Path=/; SameSite=None'
@@ -116,15 +111,25 @@ def handle_login(body):
         refresh_cookie = f'refresh_token={refresh_token}; HttpOnly; Secure; Path=/; SameSite=None'
 
         # Concatenate cookies for the header
-        cookie_header = f'{id_cookie}, {access_cookie}, {refresh_cookie}'
+        cookie_header = f'{id_cookie}; {access_cookie}; {refresh_cookie}'
 
         return {
             'statusCode': 200,
             'headers': {
-                'Set-Cookie': refresh_cookie
+                'Set-Cookie': cookie_header
             },
             'body': json.dumps('Login successful')
         }
+
+        # return {
+        #     'statusCode': 200,
+        #     'multiValueHeaders': {
+        #         'Set-Cookie': [id_cookie, access_cookie, refresh_cookie],
+        #     },
+        #     'body': json.dumps('Login successful')
+        # }
+
+
 
     except ClientError as e:
         return {'statusCode': 400, 'body': json.dumps(e.response['Error']['Message'])}
