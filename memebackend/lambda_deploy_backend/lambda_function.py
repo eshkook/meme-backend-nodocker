@@ -128,19 +128,49 @@ def handle_login(body):
     except ClientError as e:
         return {'statusCode': 400, 'body': json.dumps(e.response['Error']['Message'])}
 
-def handle_login_confirmation(body):
-    # Assuming access_token is sent in the body, though usually it's in the header
-    access_token = body.get('access_token')
+# def handle_login_confirmation(body):
+#     # Assuming access_token is sent in the body, though usually it's in the header
+#     access_token = body.get('access_token')
 
-    if not access_token:
-        return {'statusCode': 400, 'body': json.dumps('No access token provided')}
+#     if not access_token:
+#         return {'statusCode': 400, 'body': json.dumps('No access token provided')}
 
-    client = boto3.client('cognito-idp')
+#     client = boto3.client('cognito-idp')
+
+#     try:
+#         # Using GetUser to validate the access token
+#         response = client.get_user(AccessToken=access_token)
+#         return {'statusCode': 200, 'body': json.dumps('You are indeed logged in')}
+
+#     except ClientError as e:
+#         # Return a 400 status code for any client error from AWS SDK
+#         return {'statusCode': 400, 'body': json.dumps(e.response['Error']['Message'])}
+
+def handle_logout(body):
+    # Assuming we are using cookies for session management,
+    # so there's no need to get a token from the body.
 
     try:
-        # Using GetUser to validate the access token
-        response = client.get_user(AccessToken=access_token)
-        return {'statusCode': 200, 'body': json.dumps('You are indeed logged in')}
+        # Perform any necessary actions to handle logout.
+        # This might include logging the event, updating user status in your system, etc.
+        # AWS Cognito itself doesn't require an action on the server to 'log out'.
+
+        # Clearing the cookies in the client response to invalidate the session.
+        # clear_cookies_header = {
+        #     'Set-Cookie': 'access_token=; HttpOnly; Secure; Path=/; SameSite=None; Max-Age=0',
+        #     'Set-Cookie': 'id_token=; HttpOnly; Secure; Path=/; SameSite=None; Max-Age=0',
+        #     'Set-Cookie': 'refresh_token=; HttpOnly; Secure; Path=/; SameSite=None; Max-Age=0',
+        # }
+
+        access_cookie = f'access_token=; HttpOnly; Secure; Path=/; SameSite=None'
+
+        return {
+            'statusCode': 200,
+            'headers': {
+                'Set-Cookie': access_cookie
+            },
+            'body': json.dumps('Login successful')
+        }
 
     except ClientError as e:
         # Return a 400 status code for any client error from AWS SDK
