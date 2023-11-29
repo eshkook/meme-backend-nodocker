@@ -30,6 +30,8 @@ def lambda_handler(event, context):
         return handle_confirmation(body)
     elif action == 'login':
         return handle_login(body)
+    elif action == 'login_confirmation':
+        return handle_login(body)
     else:
         return {'statusCode': 400, 'body': json.dumps('Invalid action')}
 
@@ -100,12 +102,6 @@ def handle_login(body):
         print('access_token: ', access_token)
         print('refresh_token: ', refresh_token)
 
-        # For local development (no 'Secure' attribute)
-        # id_cookie = f'id_token={id_token}; HttpOnly; Path=/; SameSite=None'
-        # access_cookie = f'access_token={access_token}; HttpOnly; Path=/; SameSite=None'
-        # refresh_cookie = f'refresh_token={refresh_token}; HttpOnly; Path=/; SameSite=None'
-
-        # Uncomment the following lines for production (with 'Secure' attribute)
         id_cookie = f'id_token={id_token}; HttpOnly; Secure; Path=/; SameSite=None'
         access_cookie = f'access_token={access_token}; HttpOnly; Secure; Path=/; SameSite=None'
         refresh_cookie = f'refresh_token={refresh_token}; HttpOnly; Secure; Path=/; SameSite=None'
@@ -129,9 +125,27 @@ def handle_login(body):
         #     'body': json.dumps('Login successful')
         # }
 
-
-
     except ClientError as e:
         return {'statusCode': 400, 'body': json.dumps(e.response['Error']['Message'])}
 
-    
+def handle_login_confirmation(body):
+    access_token = body.get('access_token')
+
+    if not access_token:
+        return {'statusCode': 400, 'body': json.dumps('No access token provided')}
+
+    client = boto3.client('cognito-idp')
+    user_pool_id = 'YOUR_USER_POOL_ID'
+
+    try:
+        # Using GetUser to validate the access token
+        response = client.get_user(
+            AccessToken=access_token
+        )
+        return {'statusCode': 200, 'body': json.dumps('You are indeed logged in')}
+
+    except client.exceptions.NotAuthorizedException:
+        return {'statusCode': 401, 'body': json.dumps('Login validation failed')}
+
+    except Exception as e:
+        return {'statusCode': 500, 'body': json.dumps(str(e))}
