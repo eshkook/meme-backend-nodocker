@@ -33,7 +33,7 @@ def lambda_handler(event, context):
     elif action == 'logout':
         return handle_logout(body)
     elif action == 'delete':
-        return handle_delete(body)
+        return handle_delete(event)
     else:
         return {'statusCode': 400, 'body': json.dumps('Invalid action')}
 
@@ -132,7 +132,7 @@ def handle_login(body):
 
 def handle_logout(body):
     try:
-        access_cookie = f'access_token=; HttpOnly; Secure; Path=/; SameSite=None'
+        access_cookie = f'access_token=; HttpOnly; Secure; Path=/; SameSite=None; Expires=Thu, 01 Jan 1970 00:00:00 GMT'
 
         return {
             'statusCode': 200,
@@ -146,10 +146,16 @@ def handle_logout(body):
         # Return a 400 status code for any client error from AWS SDK
         return {'statusCode': 400, 'body': json.dumps(e.response['Error']['Message'])}
     
-def handle_delete(body):
-    access_token = body.get('access_token')
+def handle_delete(event):
+    print("Headers:", event.get('headers'))
+    cookies = event.get('headers', {}).get('Cookie', '')
+    print('cookis: ', cookies)
+    print(type(cookies))
+    access_token = extract_token(cookies, 'access_token')
+    print(access_token)
 
     if not access_token:
+        print('nnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnn')
         return {'statusCode': 400, 'body': json.dumps('No access token provided')}
 
     client = boto3.client('cognito-idp')
@@ -165,7 +171,9 @@ def handle_delete(body):
             Username=username
         )
 
-        access_cookie = f'access_token=; HttpOnly; Secure; Path=/; SameSite=None'
+        print('dddddddddddddddddddddddd')
+
+        access_cookie = f'access_token=; HttpOnly; Secure; Path=/; SameSite=None; Expires=Thu, 01 Jan 1970 00:00:00 GMT'
 
         return {
         'statusCode': 200,
@@ -177,3 +185,10 @@ def handle_delete(body):
 
     except ClientError as e:
         return {'statusCode': 400, 'body': json.dumps(e.response['Error']['Message'])}
+    
+def extract_token(cookies, token_name):
+    for cookie in cookies.split(';'):
+        parts = cookie.strip().split('=')
+        if parts[0] == token_name and len(parts) > 1:
+            return parts[1]
+    return None
