@@ -31,4 +31,4 @@ import numpy as np
 a=np.nan
 print(a)
 if np.nan:
-    print(9)
+    print(1/0)

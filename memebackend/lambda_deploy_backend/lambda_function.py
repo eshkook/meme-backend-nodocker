@@ -59,8 +59,13 @@ def handle_signup(body):
         )
         return {'statusCode': 200,
                 'body': json.dumps('User registration successful.')}
-    except ClientError as e:
+    
+    except ClientError as e:    
+        print("e.response['Error']['Message']: ", e.response['Error']['Message'])
         return {'statusCode': 400, 'body': json.dumps(e.response['Error']['Message'])}
+    except Exception as e:
+        print('error: ', e)
+        return {'statusCode': 500, 'body': json.dumps('An internal error occurred')}
 
 def handle_confirmation(body):
     email = body['email']
@@ -75,8 +80,13 @@ def handle_confirmation(body):
             ConfirmationCode=confirmation_code
         )
         return {'statusCode': 200, 'body': json.dumps('Confirmation successful.')}
-    except ClientError as e:
+    
+    except ClientError as e:    
+        print("e.response['Error']['Message']: ", e.response['Error']['Message'])
         return {'statusCode': 400, 'body': json.dumps(e.response['Error']['Message'])}
+    except Exception as e:
+        print('error: ', e)
+        return {'statusCode': 500, 'body': json.dumps('An internal error occurred')}
 
 def handle_login(body):
     email = body['email']
@@ -95,6 +105,7 @@ def handle_login(body):
                 'PASSWORD': password
             }
         )
+        a=1/0
 
         id_token = response['AuthenticationResult']['IdToken']
         access_token = response['AuthenticationResult']['AccessToken']
@@ -127,8 +138,12 @@ def handle_login(body):
         #     'body': json.dumps('Login successful')
         # }
 
-    except ClientError as e:
+    except ClientError as e:    
+        print("e.response['Error']['Message']: ", e.response['Error']['Message'])
         return {'statusCode': 400, 'body': json.dumps(e.response['Error']['Message'])}
+    except Exception as e:
+        print('error: ', e)
+        return {'statusCode': 500, 'body': json.dumps('An internal error occurred')}
 
 def handle_logout(body):
     try:
@@ -142,9 +157,12 @@ def handle_logout(body):
             'body': json.dumps('Logout successful')
         }
 
-    except ClientError as e:
-        # Return a 400 status code for any client error from AWS SDK
+    except ClientError as e:    
+        print("e.response['Error']['Message']: ", e.response['Error']['Message'])
         return {'statusCode': 400, 'body': json.dumps(e.response['Error']['Message'])}
+    except Exception as e:
+        print('error: ', e)
+        return {'statusCode': 500, 'body': json.dumps('An internal error occurred')}
     
 def handle_delete(event):
     print("Headers:", event.get('headers'))
@@ -183,8 +201,12 @@ def handle_delete(event):
         'body': json.dumps('Account Deletion Successful')
     }
 
-    except ClientError as e:
+    except ClientError as e:    
+        print("e.response['Error']['Message']: ", e.response['Error']['Message'])
         return {'statusCode': 400, 'body': json.dumps(e.response['Error']['Message'])}
+    except Exception as e:
+        print('error: ', e)
+        return {'statusCode': 500, 'body': json.dumps('An internal error occurred')}
     
 def extract_token(cookies, token_name):
     for cookie in cookies.split(';'):
