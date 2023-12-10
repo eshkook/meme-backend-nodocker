@@ -153,6 +153,8 @@ def handle_login(body):
 def handle_logout(body):
     try:
         access_cookie = f'access_token=; HttpOnly; Secure; Path=/; SameSite=None; Expires=Thu, 01 Jan 1970 00:00:00 GMT'
+        id_cookie = f'id_token=; HttpOnly; Secure; Path=/; SameSite=None; Expires=Thu, 01 Jan 1970 00:00:00 GMT'
+        refresh_cookie = f'refresh_token=; HttpOnly; Secure; Path=/; SameSite=None; Expires=Thu, 01 Jan 1970 00:00:00 GMT'
 
         return {
             'statusCode': 200,
@@ -161,6 +163,14 @@ def handle_logout(body):
             },
             'body': json.dumps('Logout successful')
         }
+    
+        # return {
+        #     'statusCode': 200,
+        #     'multiValueHeaders': {
+        #         'Set-Cookie': [id_cookie, access_cookie, refresh_cookie],
+        #     },
+        #     'body': json.dumps('Login successful')
+        # }
 
     except ClientError as e:    
         logger.error("ClientError occurred: %s", e.response['Error']['Message'])
@@ -197,6 +207,8 @@ def handle_delete(event):
         print('dddddddddddddddddddddddd')
 
         access_cookie = f'access_token=; HttpOnly; Secure; Path=/; SameSite=None; Expires=Thu, 01 Jan 1970 00:00:00 GMT'
+        id_cookie = f'id_token=; HttpOnly; Secure; Path=/; SameSite=None; Expires=Thu, 01 Jan 1970 00:00:00 GMT'
+        refresh_cookie = f'refresh_token=; HttpOnly; Secure; Path=/; SameSite=None; Expires=Thu, 01 Jan 1970 00:00:00 GMT'
 
         return {
         'statusCode': 200,
@@ -204,7 +216,17 @@ def handle_delete(event):
             'Set-Cookie': access_cookie
         },
         'body': json.dumps('Account Deletion Successful')
-    }
+        }
+    
+        # return {
+        #     'statusCode': 200,
+        #     'multiValueHeaders': {
+        #         'Set-Cookie': [id_cookie, access_cookie, refresh_cookie],
+        #     },
+        #     'body': json.dumps('Login successful')
+        # }
+
+
 
     except ClientError as e:    
         logger.error("ClientError occurred: %s", e.response['Error']['Message'])
