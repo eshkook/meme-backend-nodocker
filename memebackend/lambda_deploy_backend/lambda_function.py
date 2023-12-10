@@ -12,7 +12,12 @@
 from botocore.exceptions import ClientError
 import boto3
 import json
+import logging
 from boto3.dynamodb.conditions import Attr
+
+# Configure logging
+logger = logging.getLogger()
+logger.setLevel(logging.INFO)  # You can set this to DEBUG, INFO, WARNING, ERROR
 
 # AWS DynamoDB setup
 region_name = "eu-west-1"
@@ -64,7 +69,7 @@ def handle_signup(body):
         print("e.response['Error']['Message']: ", e.response['Error']['Message'])
         return {'statusCode': 400, 'body': json.dumps(e.response['Error']['Message'])}
     except Exception as e:
-        print('error: ', e)
+        logger.error('An error occurred: %s', e, exc_info=True)
         return {'statusCode': 500, 'body': json.dumps('An internal error occurred')}
 
 def handle_confirmation(body):
@@ -85,7 +90,7 @@ def handle_confirmation(body):
         print("e.response['Error']['Message']: ", e.response['Error']['Message'])
         return {'statusCode': 400, 'body': json.dumps(e.response['Error']['Message'])}
     except Exception as e:
-        print('error: ', e)
+        logger.error('An error occurred: %s', e, exc_info=True)
         return {'statusCode': 500, 'body': json.dumps('An internal error occurred')}
 
 def handle_login(body):
@@ -105,7 +110,6 @@ def handle_login(body):
                 'PASSWORD': password
             }
         )
-        a=1/0
 
         id_token = response['AuthenticationResult']['IdToken']
         access_token = response['AuthenticationResult']['AccessToken']
@@ -142,7 +146,7 @@ def handle_login(body):
         print("e.response['Error']['Message']: ", e.response['Error']['Message'])
         return {'statusCode': 400, 'body': json.dumps(e.response['Error']['Message'])}
     except Exception as e:
-        print('error: ', e)
+        logger.error('An error occurred: %s', e, exc_info=True)
         return {'statusCode': 500, 'body': json.dumps('An internal error occurred')}
 
 def handle_logout(body):
@@ -161,7 +165,7 @@ def handle_logout(body):
         print("e.response['Error']['Message']: ", e.response['Error']['Message'])
         return {'statusCode': 400, 'body': json.dumps(e.response['Error']['Message'])}
     except Exception as e:
-        print('error: ', e)
+        logger.error('An error occurred: %s', e, exc_info=True)
         return {'statusCode': 500, 'body': json.dumps('An internal error occurred')}
     
 def handle_delete(event):
@@ -205,7 +209,7 @@ def handle_delete(event):
         print("e.response['Error']['Message']: ", e.response['Error']['Message'])
         return {'statusCode': 400, 'body': json.dumps(e.response['Error']['Message'])}
     except Exception as e:
-        print('error: ', e)
+        logger.error('An error occurred: %s', e, exc_info=True)
         return {'statusCode': 500, 'body': json.dumps('An internal error occurred')}
     
 def extract_token(cookies, token_name):
