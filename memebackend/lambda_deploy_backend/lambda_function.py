@@ -70,7 +70,8 @@ def handle_signup(body):
         return {'statusCode': 400, 'body': json.dumps(e.response['Error']['Message'])}
     except Exception as e:
         logger.error('An error occurred: %s', e, exc_info=True)
-        return {'statusCode': 500, 'body': json.dumps('An internal error occurred')}
+        return {'statusCode': 500, 'body': json.dumps('An internal error occurred')} # without this response, 
+                                                                                     #  it can be interpretated as success by the mutation
 
 def handle_confirmation(body):
     email = body['email']
