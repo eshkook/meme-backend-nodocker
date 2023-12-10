@@ -17,7 +17,7 @@ from boto3.dynamodb.conditions import Attr
 
 # Configure logging
 logger = logging.getLogger()
-logger.setLevel(logging.INFO)  # You can set this to DEBUG, INFO, WARNING, ERROR
+logger.setLevel(logging.ERROR)  # You can set this to DEBUG, INFO, WARNING, ERROR
 
 # AWS DynamoDB setup
 region_name = "eu-west-1"
@@ -66,7 +66,7 @@ def handle_signup(body):
                 'body': json.dumps('User registration successful.')}
     
     except ClientError as e:    
-        print("e.response['Error']['Message']: ", e.response['Error']['Message'])
+        logger.error("ClientError occurred: %s", e.response['Error']['Message'])
         return {'statusCode': 400, 'body': json.dumps(e.response['Error']['Message'])}
     except Exception as e:
         logger.error('An error occurred: %s', e, exc_info=True)
@@ -87,7 +87,7 @@ def handle_confirmation(body):
         return {'statusCode': 200, 'body': json.dumps('Confirmation successful.')}
     
     except ClientError as e:    
-        print("e.response['Error']['Message']: ", e.response['Error']['Message'])
+        logger.error("ClientError occurred: %s", e.response['Error']['Message'])
         return {'statusCode': 400, 'body': json.dumps(e.response['Error']['Message'])}
     except Exception as e:
         logger.error('An error occurred: %s', e, exc_info=True)
@@ -143,7 +143,7 @@ def handle_login(body):
         # }
 
     except ClientError as e:    
-        print("e.response['Error']['Message']: ", e.response['Error']['Message'])
+        logger.error("ClientError occurred: %s", e.response['Error']['Message'])
         return {'statusCode': 400, 'body': json.dumps(e.response['Error']['Message'])}
     except Exception as e:
         logger.error('An error occurred: %s', e, exc_info=True)
@@ -162,7 +162,7 @@ def handle_logout(body):
         }
 
     except ClientError as e:    
-        print("e.response['Error']['Message']: ", e.response['Error']['Message'])
+        logger.error("ClientError occurred: %s", e.response['Error']['Message'])
         return {'statusCode': 400, 'body': json.dumps(e.response['Error']['Message'])}
     except Exception as e:
         logger.error('An error occurred: %s', e, exc_info=True)
@@ -206,7 +206,7 @@ def handle_delete(event):
     }
 
     except ClientError as e:    
-        print("e.response['Error']['Message']: ", e.response['Error']['Message'])
+        logger.error("ClientError occurred: %s", e.response['Error']['Message'])
         return {'statusCode': 400, 'body': json.dumps(e.response['Error']['Message'])}
     except Exception as e:
         logger.error('An error occurred: %s', e, exc_info=True)
