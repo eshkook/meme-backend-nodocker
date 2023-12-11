@@ -243,6 +243,7 @@ def handle_delete(event):
 
     # Try to validate the access token first
     if not access_token: # access_token wasn't provided in cookies
+        logger.error("access_token wasn't provided in cookies")
         return {'statusCode': 401, 'body': json.dumps("An internal error occurred")}
     else:    
         try:
@@ -253,7 +254,8 @@ def handle_delete(event):
 
         except client.exceptions.NotAuthorizedException as e:
             # If Access token is invalid, try using the Refresh token
-            if not refresh_token: # Refresh token was needed but wasn't provided in cookies
+            if not refresh_token: 
+                logger.error("refresh_token wasn't provided in cookies")
                 return {'statusCode': 401, 'body': json.dumps("An internal error occurred")}
             else:    
                 try:
