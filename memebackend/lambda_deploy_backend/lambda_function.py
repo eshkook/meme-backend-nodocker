@@ -236,8 +236,10 @@ def clear_tokens_response_200(message):
 
     # return {
     #     'statusCode': 200,
-    #     'headers': {'Set-Cookie': [access_cookie, id_cookie, refresh_cookie]},
-    #     'body': json.dumps(message)
+    #     'multiValueHeaders': {
+    #         'Set-Cookie': [id_cookie, access_cookie, refresh_cookie],
+    #     },
+    #     'body': json.dumps('Login successful')
     # }
 
     return {
@@ -255,8 +257,10 @@ def clear_tokens_response_401(message):
 
     return {
         'statusCode': 401,
-        'headers': {'Set-Cookie': [access_cookie, id_cookie, refresh_cookie]},
-        'body': json.dumps(message)
+        'multiValueHeaders': {
+            'Set-Cookie': [id_cookie, access_cookie, refresh_cookie],
+        },
+        'body': json.dumps('Login successful')
     }
 
 def refresh_access_token(client, refresh_token, client_id):
