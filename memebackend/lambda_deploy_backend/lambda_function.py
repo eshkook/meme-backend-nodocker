@@ -152,29 +152,7 @@ def handle_login(body):
 
 def handle_logout(body):
     try:
-        access_cookie = f'access_token=; HttpOnly; Secure; Path=/; SameSite=None; Expires=Thu, 01 Jan 1970 00:00:00 GMT'
-        id_cookie = f'id_token=; HttpOnly; Secure; Path=/; SameSite=None; Expires=Thu, 01 Jan 1970 00:00:00 GMT'
-        refresh_cookie = f'refresh_token=; HttpOnly; Secure; Path=/; SameSite=None; Expires=Thu, 01 Jan 1970 00:00:00 GMT'
-
-        return {
-            'statusCode': 200,
-            'headers': {
-                'Set-Cookie': access_cookie
-            },
-            'body': json.dumps('Logout successful')
-        }
-    
-        # return {
-        #     'statusCode': 200,
-        #     'multiValueHeaders': {
-        #         'Set-Cookie': [id_cookie, access_cookie, refresh_cookie],
-        #     },
-        #     'body': json.dumps('Login successful')
-        # }
-
-    except ClientError as e:    
-        logger.error("ClientError occurred: %s", e.response['Error']['Message'])
-        return {'statusCode': 400, 'body': json.dumps(e.response['Error']['Message'])}
+        return clear_tokens_response_200('Logout successful')
     except Exception as e:
         logger.error('An error occurred: %s', e, exc_info=True)
         return {'statusCode': 500, 'body': json.dumps('An internal error occurred')}
@@ -250,7 +228,7 @@ def handle_delete(event):
             user_info = client.get_user(AccessToken=access_token)
             username = user_info['Username']
             delete_user(client, username)
-            return clear_tokens_response('Account Deletion Successful')
+            return clear_tokens_response_200('Account Deletion Successful')
 
         except client.exceptions.NotAuthorizedException as e:
             # If Access token is invalid, try using the Refresh token
@@ -264,12 +242,12 @@ def handle_delete(event):
                     new_tokens = refresh_access_token(client, refresh_token)
                     username = new_tokens['Username']
                     delete_user(client, username)
-                    return clear_tokens_response('Account Deletion Successful - Token Refreshed')
+                    return clear_tokens_response_200('Account Deletion Successful - Token Refreshed')
                     
                 except Exception as e:
                     logger.error('Error refreshing token or deleting user: %s', e, exc_info=True)
-                    # Specific message to trigger logout on the client side
-                    return {'statusCode': 401, 'body': json.dumps('Session expired, please log in again')}
+                    # return {'statusCode': 401, 'body': json.dumps('Session expired, please log in again')}
+                    return clear_tokens_response_401('Session expired, please log in again')
 
         except Exception as e:
             logger.error('An error occurred: %s', e, exc_info=True)
@@ -281,12 +259,22 @@ def delete_user(client, username):
         Username=username
     )
 
-def clear_tokens_response(message):
+def clear_tokens_response_200(message):
     access_cookie = 'access_token=; HttpOnly; Secure; Path=/; SameSite=None; Expires=Thu, 01 Jan 1970 00:00:00 GMT'
     id_cookie = 'id_token=; HttpOnly; Secure; Path=/; SameSite=None; Expires=Thu, 01 Jan 1970 00:00:00 GMT'
     refresh_cookie = 'refresh_token=; HttpOnly; Secure; Path=/; SameSite=None; Expires=Thu, 01 Jan 1970 00:00:00 GMT'
     return {
         'statusCode': 200,
+        'headers': {'Set-Cookie': [access_cookie, id_cookie, refresh_cookie]},
+        'body': json.dumps(message)
+    }
+
+def clear_tokens_response_401(message):
+    access_cookie = 'access_token=; HttpOnly; Secure; Path=/; SameSite=None; Expires=Thu, 01 Jan 1970 00:00:00 GMT'
+    id_cookie = 'id_token=; HttpOnly; Secure; Path=/; SameSite=None; Expires=Thu, 01 Jan 1970 00:00:00 GMT'
+    refresh_cookie = 'refresh_token=; HttpOnly; Secure; Path=/; SameSite=None; Expires=Thu, 01 Jan 1970 00:00:00 GMT'
+    return {
+        'statusCode': 401,
         'headers': {'Set-Cookie': [access_cookie, id_cookie, refresh_cookie]},
         'body': json.dumps(message)
     }
