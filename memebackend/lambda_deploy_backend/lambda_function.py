@@ -36,7 +36,7 @@ def lambda_handler(event, context):
     elif action == 'login':
         return handle_login(body)
     elif action == 'logout':
-        return handle_logout(body)
+        return handle_logout(event)
     elif action == 'delete':
         return handle_delete(event)
     else:
@@ -150,68 +150,39 @@ def handle_login(body):
         logger.error('An error occurred: %s', e, exc_info=True)
         return {'statusCode': 500, 'body': json.dumps('An internal error occurred')}
 
-def handle_logout(body):
-    try:
-        return clear_tokens_response_200('Logout successful')
-    except Exception as e:
-        logger.error('An error occurred: %s', e, exc_info=True)
-        return {'statusCode': 500, 'body': json.dumps('An internal error occurred')}
-    
-# def handle_delete(event):
-#     print("Headers:", event.get('headers'))
-#     cookies = event.get('headers', {}).get('Cookie', '')
-#     print('cookis: ', cookies)
-#     print(type(cookies))
-#     access_token = extract_token(cookies, 'access_token')
-#     print(access_token)
-
-#     if not access_token:
-#         print('nnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnn')
-#         return {'statusCode': 400, 'body': json.dumps('No access token provided')}
-
-#     client = boto3.client('cognito-idp')
-
+# def handle_logout(body):
 #     try:
-#         # Validate the access token and get the username
-#         user_info = client.get_user(AccessToken=access_token)
-#         username = user_info['Username']
-
-#         # Delete the user from Cognito user pool
-#         client.admin_delete_user(
-#             UserPoolId='eu-west-1_BZy97DfFY',
-#             Username=username
-#         )
-
-#         print('dddddddddddddddddddddddd')
-
-#         access_cookie = f'access_token=; HttpOnly; Secure; Path=/; SameSite=None; Expires=Thu, 01 Jan 1970 00:00:00 GMT'
-#         id_cookie = f'id_token=; HttpOnly; Secure; Path=/; SameSite=None; Expires=Thu, 01 Jan 1970 00:00:00 GMT'
-#         refresh_cookie = f'refresh_token=; HttpOnly; Secure; Path=/; SameSite=None; Expires=Thu, 01 Jan 1970 00:00:00 GMT'
-
-#         return {
-#         'statusCode': 200,
-#         'headers': {
-#             'Set-Cookie': access_cookie
-#         },
-#         'body': json.dumps('Account Deletion Successful')
-#         }
-    
-#         # return {
-#         #     'statusCode': 200,
-#         #     'multiValueHeaders': {
-#         #         'Set-Cookie': [id_cookie, access_cookie, refresh_cookie],
-#         #     },
-#         #     'body': json.dumps('Login successful')
-#         # }
-
-
-
-#     except ClientError as e:    
-#         logger.error("ClientError occurred: %s", e.response['Error']['Message'])
-#         return {'statusCode': 400, 'body': json.dumps(e.response['Error']['Message'])}
+#         return clear_tokens_response_200('Logout successful')
 #     except Exception as e:
 #         logger.error('An error occurred: %s', e, exc_info=True)
 #         return {'statusCode': 500, 'body': json.dumps('An internal error occurred')}
+
+def handle_logout(event):
+    cookies = event.get('headers', {}).get('Cookie', '')
+    access_token = extract_token(cookies, 'access_token')
+    client = boto3.client('cognito-idp')
+
+    if not access_token:
+        logger.error("access_token wasn't provided in cookies")
+        return {'statusCode': 401, 'body': json.dumps("An internal error occurred")}
+
+    try:
+        # Assuming you have a function to decode the JWT access token and extract the username
+        user_info = client.get_user(AccessToken=access_token)
+        username = user_info['Username']
+
+        # Using AdminUserGlobalSignOut to sign out the user globally
+        client.admin_user_global_sign_out(
+            UserPoolId='eu-west-1_BZy97DfFY',
+            Username=username
+        )
+
+        # Clear cookies and return a successful sign-out response
+        return clear_tokens_response_200('Logout successful')
+
+    except Exception as e:
+        logger.error('An error occurred: %s', e, exc_info=True)
+        return {'statusCode': 500, 'body': json.dumps('An internal error occurred')}
 
 def handle_delete(event):
     cookies = event.get('headers', {}).get('Cookie', '')
@@ -220,38 +191,37 @@ def handle_delete(event):
     client = boto3.client('cognito-idp')
 
     # Try to validate the access token first
-    if not access_token: # access_token wasn't provided in cookies
+    if not access_token: 
         logger.error("access_token wasn't provided in cookies")
         return {'statusCode': 401, 'body': json.dumps("An internal error occurred")}
-    else:    
+    
+    try:
+        user_info = client.get_user(AccessToken=access_token)
+        username = user_info['Username']
+        delete_user(client, username)
+        return clear_tokens_response_200('Account Deletion Successful')
+
+    except client.exceptions.NotAuthorizedException as e:
+        # If Access token is invalid, try using the Refresh token
+        if not refresh_token: 
+            logger.error("refresh_token wasn't provided in cookies")
+            return {'statusCode': 401, 'body': json.dumps("An internal error occurred")}
+        
         try:
-            user_info = client.get_user(AccessToken=access_token)
-            username = user_info['Username']
+            # Refresh the access token using refresh token
+            # (Assuming you have a function to handle this)
+            new_tokens = refresh_access_token(client, refresh_token)
+            username = new_tokens['Username']
             delete_user(client, username)
-            return clear_tokens_response_200('Account Deletion Successful')
-
-        except client.exceptions.NotAuthorizedException as e:
-            # If Access token is invalid, try using the Refresh token
-            if not refresh_token: 
-                logger.error("refresh_token wasn't provided in cookies")
-                return {'statusCode': 401, 'body': json.dumps("An internal error occurred")}
-            else:    
-                try:
-                    # Refresh the access token using refresh token
-                    # (Assuming you have a function to handle this)
-                    new_tokens = refresh_access_token(client, refresh_token)
-                    username = new_tokens['Username']
-                    delete_user(client, username)
-                    return clear_tokens_response_200('Account Deletion Successful - Token Refreshed')
-                    
-                except Exception as e:
-                    logger.error('Error refreshing token or deleting user: %s', e, exc_info=True)
-                    # return {'statusCode': 401, 'body': json.dumps('Session expired, please log in again')}
-                    return clear_tokens_response_401('Session expired, please log in again')
-
+            return clear_tokens_response_200('Account Deletion Successful - Token Refreshed')
+            
         except Exception as e:
-            logger.error('An error occurred: %s', e, exc_info=True)
-            return {'statusCode': 500, 'body': json.dumps('An internal error occurred')}
+            logger.error('Error refreshing token or deleting user: %s', e, exc_info=True)
+            return clear_tokens_response_401('Session expired, please log in again. Account was not deleted.')
+
+    except Exception as e:
+        logger.error('An error occurred: %s', e, exc_info=True)
+        return {'statusCode': 500, 'body': json.dumps('An internal error occurred')}
 
 def delete_user(client, username):
     client.admin_delete_user(
