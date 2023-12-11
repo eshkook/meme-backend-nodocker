@@ -54,8 +54,16 @@ def lambda_handler(event, context):
         return {"statusCode": 500, "body": json.dumps("Error")}
     
 def handle_cloudwatch_event(event): 
-    # daily delete the users or zeroing their gpt_use_counter
-    pass
+    # send the users in the database a message "Quiet"
+    response = table.scan()
+    items = response['Items']
+    for item in items:
+        chat_id = item['chat_id']
+        payload = {
+            "chat_id": str(chat_id),
+            "text": f"Quiet",
+        }
+        response = requests.post(sendMessage_url, json=payload)
 
 def handle_telegram_event(event):
     body = json.loads(event['body'])
@@ -104,6 +112,7 @@ def handle_telegram_event(event):
                     Item={
                         "id": str(user_id),
                         "gpt_use_counter": 1,
+                        "chat_id": str(chat_id)
                     }
                 )            
 
