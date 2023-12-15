@@ -240,6 +240,10 @@ def handle_logout(event):
 #         return {'statusCode': 500, 'body': json.dumps('An internal error occurred')}
 
 def handle_delete(event):
+    ################################################# test that cookies arrived in headers
+    headers = event.get('headers', {})
+    print('headers: ', headers)
+    ########################################################
     cookies = event.get('headers', {}).get('Cookie', '')
     access_token = extract_token(cookies, 'access_token')
     refresh_token = extract_token(cookies, 'refresh_token')
