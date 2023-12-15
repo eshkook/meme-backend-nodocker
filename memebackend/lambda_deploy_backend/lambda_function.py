@@ -35,6 +35,8 @@ def lambda_handler(event, context):
         return handle_confirmation(body)
     elif action == 'login':
         return handle_login(body)
+    elif action == 'authenticate':
+        return handle_authenticate(event)
     elif action == 'logout':
         return handle_logout(event)
     elif action == 'delete':
@@ -146,6 +148,59 @@ def handle_login(body):
     except ClientError as e:    
         logger.error("ClientError occurred: %s", e.response['Error']['Message'])
         return {'statusCode': 400, 'body': json.dumps(e.response['Error']['Message'])}
+    except Exception as e:
+        logger.error('An error occurred: %s', e, exc_info=True)
+        return {'statusCode': 500, 'body': json.dumps('An internal error occurred')}
+
+def handle_authenticate(event):
+    cookies = event.get('headers', {}).get('Cookie', '')
+    access_token = extract_token(cookies, 'access_token')
+    refresh_token = extract_token(cookies, 'refresh_token')
+    client = boto3.client('cognito-idp')
+
+    # Try to validate the access token first
+    if not access_token: 
+        logger.error("access_token wasn't provided in cookies")
+        return {'statusCode': 401, 'body': json.dumps("An internal error occurred")}
+    
+    try:
+        user_info = client.get_user(AccessToken=access_token)
+
+        return {
+            'statusCode': 200,
+            'body': json.dumps('Account Authentication Successful')
+        }
+
+    except client.exceptions.NotAuthorizedException as e:
+        # If Access token is invalid, try using the Refresh token
+        if not refresh_token: 
+            logger.error("refresh_token wasn't provided in cookies")
+            return {'statusCode': 401, 'body': json.dumps("An internal error occurred")}
+        
+        try:
+            # Refresh the access token using refresh token
+            # (Assuming you have a function to handle this)
+            new_tokens = refresh_access_token(client, refresh_token)
+            id_token = new_tokens['IdToken']
+            access_token = new_tokens['AccessToken']
+            refresh_token = new_tokens['RefreshToken']
+
+            id_cookie = f'id_token={id_token}; HttpOnly; Secure; Path=/; SameSite=None'
+            access_cookie = f'access_token={access_token}; HttpOnly; Secure; Path=/; SameSite=None'
+            refresh_cookie = f'refresh_token={refresh_token}; HttpOnly; Secure; Path=/; SameSite=None'
+
+            return {
+                'statusCode': 200,
+                'multiValueHeaders': {
+                    'Set-Cookie': [id_cookie, access_cookie, refresh_cookie],
+                },
+                'body': json.dumps('Account Authentication Successful - Token Refreshed')
+            }
+            
+        except Exception as e:
+            logger.error('Error refreshing token: %s', e, exc_info=True)
+            return clear_tokens_response_401('Session expired, please log in again. Account was not deleted.')
+
     except Exception as e:
         logger.error('An error occurred: %s', e, exc_info=True)
         return {'statusCode': 500, 'body': json.dumps('An internal error occurred')}
