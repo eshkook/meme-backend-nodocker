@@ -41,8 +41,33 @@ def lambda_handler(event, context):
         return handle_logout(event)
     elif action == 'delete':
         return handle_delete(event)
+    elif action == 'reset_password_email_phase':
+        return handle_reset_password_email_phase(event)
     else:
         return {'statusCode': 400, 'body': json.dumps('Invalid action')}
+
+def handle_reset_password_email_phase(body):
+    email = body['email']
+
+    client = boto3.client('cognito-idp')
+    # user_pool_id = 'eu-west-1_BZy97DfFY'
+    client_id = '6be5bmss0rg7krjk5rd6dt28uc'
+
+    try:
+        #########################
+
+        #########################
+        
+        return {'statusCode': 200,
+                'body': json.dumps('User registration successful.')}
+    
+    except ClientError as e:    
+        logger.error("ClientError occurred: %s", e.response['Error']['Message'])
+        return {'statusCode': 400, 'body': json.dumps(e.response['Error']['Message'])}
+    except Exception as e:
+        logger.error('An error occurred: %s', e, exc_info=True)
+        return {'statusCode': 500, 'body': json.dumps('An internal error occurred')} # without this response, 
+                                                                                     #  it can be interpretated as success by the mutation
 
 def handle_signup(body):
     email = body['email']
