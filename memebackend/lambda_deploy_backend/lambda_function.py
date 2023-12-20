@@ -42,9 +42,38 @@ def lambda_handler(event, context):
     elif action == 'delete':
         return handle_delete(event)
     elif action == 'reset_password_email_phase':
-        return handle_reset_password_email_phase(event)
+        return handle_reset_password_email_phase(body)
+    elif action == 'reset_password_code_phase':
+        return handle_reset_password_code_phase(body)
     else:
         return {'statusCode': 400, 'body': json.dumps('Invalid action')}
+
+def handle_reset_password_code_phase(body):
+    email = body['email']
+    confirmation_code = body['confirmation_code']
+    password = body['password']
+
+    client = boto3.client('cognito-idp')
+    # user_pool_id = 'eu-west-1_BZy97DfFY'
+    client_id = '6be5bmss0rg7krjk5rd6dt28uc'
+
+    try:
+        client.confirm_forgot_password(
+            ClientId=client_id,
+            Username=email,
+            ConfirmationCode=confirmation_code,
+            Password=password
+        )
+        return {'statusCode': 200,
+                'body': json.dumps('Password reset was successful.')}
+    
+    except ClientError as e:    
+        logger.error("ClientError occurred: %s", e.response['Error']['Message'])
+        return {'statusCode': 400, 'body': json.dumps(e.response['Error']['Message'])}
+    except Exception as e:
+        logger.error('An error occurred: %s', e, exc_info=True)
+        return {'statusCode': 500, 'body': json.dumps('An internal error occurred')} # without this response, 
+                                                                                     #  it can be interpretated as success by the mutation
 
 def handle_reset_password_email_phase(body):
     email = body['email']
@@ -59,7 +88,7 @@ def handle_reset_password_email_phase(body):
             Username=email
         )
         return {'statusCode': 200,
-                'body': json.dumps('User registration successful.')}
+                'body': json.dumps('Asking for code to reset password was successful.')}
     
     except ClientError as e:    
         logger.error("ClientError occurred: %s", e.response['Error']['Message'])
