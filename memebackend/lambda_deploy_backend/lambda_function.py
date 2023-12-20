@@ -54,10 +54,10 @@ def handle_reset_password_email_phase(body):
     client_id = '6be5bmss0rg7krjk5rd6dt28uc'
 
     try:
-        #########################
-
-        #########################
-        
+        client.forgot_password(
+            ClientId=client_id,
+            Username=email
+        )
         return {'statusCode': 200,
                 'body': json.dumps('User registration successful.')}
     
