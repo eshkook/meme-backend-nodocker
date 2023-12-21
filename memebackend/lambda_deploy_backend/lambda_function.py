@@ -392,7 +392,6 @@ def refresh_access_token(client, refresh_token, client_id):
         }
 
     except ClientError as e:
-        logger.error("Error refreshing token: %s", e.response['Error']['Message'])
         raise e  # Re-raise the exception to handle it in the calling function
 
 def extract_token(cookies, token_name):
