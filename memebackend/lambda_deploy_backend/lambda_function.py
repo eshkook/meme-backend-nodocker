@@ -172,32 +172,15 @@ def handle_login(body):
         access_token = response['AuthenticationResult']['AccessToken']
         refresh_token = response['AuthenticationResult']['RefreshToken']
 
-        print('id_token: ', id_token)
-        print('access_token: ', access_token)
-        print('refresh_token: ', refresh_token)
-
         id_cookie = f'id_token={id_token}; HttpOnly; Secure; Path=/; SameSite=None'
         access_cookie = f'access_token={access_token}; HttpOnly; Secure; Path=/; SameSite=None'
         refresh_cookie = f'refresh_token={refresh_token}; HttpOnly; Secure; Path=/; SameSite=None'
-
-        # Concatenate cookies for the header
-        cookie_header = f'{id_cookie}; {access_cookie}; {refresh_cookie}'
-
+    
         return {
             'statusCode': 200,
-            'headers': {
-                'Set-Cookie': access_cookie,
-            },
+            'cookies': [id_cookie, access_cookie, refresh_cookie],
             'body': json.dumps('Login successful')
         }
-
-        # return {
-        #     'statusCode': 200,
-        #     'multiValueHeaders': {
-        #         'Set-Cookie': [id_cookie, access_cookie, refresh_cookie],
-        #     },
-        #     'body': json.dumps('Login successful')
-        # }
 
     except ClientError as e:    
         logger.error("ClientError occurred: %s", e.response['Error']['Message'])
@@ -245,9 +228,7 @@ def handle_authenticate(event):
 
             return {
                 'statusCode': 200,
-                'multiValueHeaders': {
-                    'Set-Cookie': [id_cookie, access_cookie, refresh_cookie],
-                },
+                'cookies': [id_cookie, access_cookie, refresh_cookie],
                 'body': json.dumps('Account Authentication Successful - Token Refreshed')
             }
             
@@ -326,7 +307,10 @@ def handle_delete(event):
             }
         )
         # now we can delete account:
-        delete_user(client, username)
+        client.admin_delete_user(
+            UserPoolId='eu-west-1_BZy97DfFY',
+            Username=username
+        )
         return clear_tokens_response_200('Account Deletion Successful')
 
     except client.exceptions.NotAuthorizedException as e:
@@ -350,7 +334,10 @@ def handle_delete(event):
                 }
             )
             # now we can delete account:
-            delete_user(client, username)
+            client.admin_delete_user(
+                UserPoolId='eu-west-1_BZy97DfFY',
+                Username=username
+            )
             return clear_tokens_response_200('Account Deletion Successful - Token Refreshed')
             
         except Exception as e:
@@ -361,30 +348,14 @@ def handle_delete(event):
         logger.error('An error occurred: %s', e, exc_info=True)
         return {'statusCode': 500, 'body': json.dumps('An internal error occurred')}
 
-def delete_user(client, username):
-    client.admin_delete_user(
-        UserPoolId='eu-west-1_BZy97DfFY',
-        Username=username
-    )
-
 def clear_tokens_response_200(message):
     access_cookie = 'access_token=; HttpOnly; Secure; Path=/; SameSite=None; Expires=Thu, 01 Jan 1970 00:00:00 GMT'
     id_cookie = 'id_token=; HttpOnly; Secure; Path=/; SameSite=None; Expires=Thu, 01 Jan 1970 00:00:00 GMT'
     refresh_cookie = 'refresh_token=; HttpOnly; Secure; Path=/; SameSite=None; Expires=Thu, 01 Jan 1970 00:00:00 GMT'
 
-    # return {
-    #     'statusCode': 200,
-    #     'multiValueHeaders': {
-    #         'Set-Cookie': [id_cookie, access_cookie, refresh_cookie],
-    #     },
-    #     'body': json.dumps('Login successful')
-    # }
-
     return {
             'statusCode': 200,
-            'headers': {
-                'Set-Cookie': access_cookie,
-            },
+            'cookies': [id_cookie, access_cookie, refresh_cookie],
             'body': json.dumps(message)
         }
 
@@ -395,9 +366,7 @@ def clear_tokens_response_401(message):
 
     return {
         'statusCode': 401,
-        'multiValueHeaders': {
-            'Set-Cookie': [id_cookie, access_cookie, refresh_cookie],
-        },
+        'cookies': [id_cookie, access_cookie, refresh_cookie],
         'body': json.dumps('Login successful')
     }
 
