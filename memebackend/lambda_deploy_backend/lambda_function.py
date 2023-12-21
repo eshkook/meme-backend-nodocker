@@ -284,7 +284,6 @@ def handle_delete(event):
     cookies = event.get('headers', {}).get('Cookie', '')
     access_token = extract_token(cookies, 'access_token')
     refresh_token = extract_token(cookies, 'refresh_token')
-    id_token = extract_token(cookies, 'id_token')
     client = boto3.client('cognito-idp')
 
     # Try to validate the access token first
