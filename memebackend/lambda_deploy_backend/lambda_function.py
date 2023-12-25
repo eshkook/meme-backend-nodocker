@@ -138,7 +138,7 @@ def handle_gpt(event):
             except Exception as e:
                 print(e)
                 if j == 2:
-                    response_text = 'Sorry, some error occured, please write again'
+                    response_text = 'Sorry, some error occured, please try again'
                 time.sleep(1)
         return {'statusCode': 200, 'body': json.dumps(response_text)} 
 
@@ -152,10 +152,12 @@ def handle_gpt(event):
             # Refresh the access token using refresh token
             new_tokens = refresh_access_token(client, refresh_token)
             username = new_tokens['Username']
-            id_token = new_tokens['id_token']#????????
-            access_token = new_tokens['access_token'] 
+            id_token = new_tokens['IdToken'] #?????????????
+
+            access_token = new_tokens['AccessToken'] 
             id_cookie = f'id_token={id_token}; HttpOnly; Secure; Path=/; SameSite=None'
             access_cookie = f'access_token={access_token}; HttpOnly; Secure; Path=/; SameSite=None'
+            
             # check useage limit in DynamoDB:
             region_name = "eu-west-1"
             table_name = "gpt_users_table"
@@ -199,7 +201,7 @@ def handle_gpt(event):
                 except Exception as e:
                     print(e)
                     if j == 2:
-                        response_text = 'Sorry, some error occured, please write again'
+                        response_text = 'Sorry, some error occured, please try again'
                     time.sleep(1)
             return {
                 'statusCode': 200,
@@ -276,17 +278,6 @@ def handle_signup(body):
     client_id = '6be5bmss0rg7krjk5rd6dt28uc'
 
     try:
-        # response = client.sign_up(
-        #     ClientId=client_id,
-        #     Username=email,
-        #     Password=password,
-        #     UserAttributes=[
-        #         {
-        #             'Name': 'email',
-        #             'Value': email
-        #         },
-        #     ]
-        # )
         response = client.sign_up(
         ClientId=client_id,
         Username=email,
@@ -298,11 +289,11 @@ def handle_signup(body):
             },
             {
                 'Name': 'given_name',
-                'Value': first_name  # Replace with your variable for the first name
+                'Value': first_name  
             },
             {
                 'Name': 'family_name',
-                'Value': last_name  # Replace with your variable for the last name
+                'Value': last_name  
             }
         ]
     )
@@ -405,19 +396,16 @@ def handle_authenticate(event):
         
         try:
             # Refresh the access token using refresh token
-            # (Assuming you have a function to handle this)
             new_tokens = refresh_access_token(client, refresh_token)
             id_token = new_tokens['IdToken']
             access_token = new_tokens['AccessToken']
-            refresh_token = new_tokens['RefreshToken']
 
             id_cookie = f'id_token={id_token}; HttpOnly; Secure; Path=/; SameSite=None'
             access_cookie = f'access_token={access_token}; HttpOnly; Secure; Path=/; SameSite=None'
-            refresh_cookie = f'refresh_token={refresh_token}; HttpOnly; Secure; Path=/; SameSite=None'
 
             return {
                 'statusCode': 200,
-                'cookies': [id_cookie, access_cookie, refresh_cookie],
+                'cookies': [id_cookie, access_cookie],
                 'body': json.dumps('Account Authentication Successful - Token Refreshed')
             }
             
