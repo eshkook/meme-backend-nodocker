@@ -1,5 +1,6 @@
 #  creating a deployment package with dependencies:
-# pip install ????? -t .                 
+# pip install timeout_decorator -t .
+# pip install openai==0.28 -t .                
 
 # then zip all files in this directory besides urllib stuff, and upload to aws lambda:
 
@@ -14,6 +15,14 @@ import boto3
 import json
 import logging
 from boto3.dynamodb.conditions import Attr
+from timeout_decorator import timeout
+import openai
+import time
+
+openai.api_key = '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' 
+
+gpt_limit_per_user_per_day = 3
+gpt_limit_per_IP_per_day = 3
 
 # Configure logging
 logger = logging.getLogger()
@@ -29,7 +38,9 @@ def lambda_handler(event, context):
     body = json.loads(event['body'])
     action = body.get('action')
 
-    if action == 'signup':
+    if "source" in event and event["source"] == "aws.events":
+        handle_cloudwatch_event(event)
+    elif action == 'signup':
         return handle_signup(body)
     elif action == 'confirm':
         return handle_confirmation(body)
@@ -41,12 +52,170 @@ def lambda_handler(event, context):
         return handle_logout(event)
     elif action == 'delete':
         return handle_delete(event)
+    elif action == 'gpt':
+        return handle_gpt(event)
     elif action == 'reset_password_email_phase':
         return handle_reset_password_email_phase(body)
     elif action == 'reset_password_code_phase':
         return handle_reset_password_code_phase(body)
     else:
         return {'statusCode': 400, 'body': json.dumps('Invalid action')}
+
+@timeout(5)
+def chat_with_gpt(input):
+    instructions = '''
+    Answer shortly.
+    '''
+    messages = [
+        {"role": "system", "content": instructions},
+        {"role": "user", "content": input},
+    ]
+    response = openai.ChatCompletion.create(
+        model='gpt-3.5-turbo',
+        messages=messages,
+        temperature=0,
+        max_tokens=20
+    )
+    return response.choices[0].message['content']    
+
+def handle_cloudwatch_event(event):
+    pass
+
+def handle_gpt(event):
+    body = json.loads(event['body'])
+    cookies = event.get('headers', {}).get('Cookie', '')
+    access_token = extract_token(cookies, 'access_token')
+    refresh_token = extract_token(cookies, 'refresh_token')
+    client = boto3.client('cognito-idp')
+
+    # Try to validate the access token first
+    if not access_token: 
+        logger.error("access_token wasn't provided in cookies")
+        return {'statusCode': 401, 'body': json.dumps("An internal error occurred")}
+    
+    try:
+        # authentication:
+        user_info = client.get_user(AccessToken=access_token)
+        username = user_info['Username']
+        # check useage limit in DynamoDB:
+        region_name = "eu-west-1"
+        table_name = "???????"
+        dynamodb = boto3.resource("dynamodb", region_name=region_name)
+        table = dynamodb.Table(table_name)
+        response = table.get_item(
+            Key={
+                'id': username
+            }
+        )
+        item = response.get('Item')
+        if not item:
+            table.put_item(
+                Item={
+                    'id': username,
+                    'usage': 1 
+                }
+            )
+        elif item['usage'] < gpt_limit_per_user_per_day:
+            old_usage = item['usage']
+            table.update_item(
+                    Key={
+                        "id": username,
+                    },
+                    UpdateExpression="SET usage = :usage",
+                    ExpressionAttributeValues={":usage": old_usage + 1},
+                )
+        else:
+            return {
+                'statusCode': 429,
+                'body': json.dumps('You have exceeded your usage limit')
+            }
+        
+        # now we can go to chatGPT:
+        prompt = body['prompt']
+        for j in range(3):
+            try:
+                response_text = chat_with_gpt(prompt)
+                break
+            except Exception as e:
+                print(e)
+                if j == 2:
+                    response_text = 'Sorry, some error occured, please write again'
+                time.sleep(1)
+        return {'statusCode': 200, 'body': json.dumps(response_text)} 
+
+    except client.exceptions.NotAuthorizedException as e:
+        # If Access token is invalid, try using the Refresh token
+        if not refresh_token: 
+            logger.error("refresh_token wasn't provided in cookies")
+            return {'statusCode': 401, 'body': json.dumps("An internal error occurred")}
+
+        try:
+            # Refresh the access token using refresh token
+            new_tokens = refresh_access_token(client, refresh_token)
+            username = new_tokens['Username']
+            id_token = new_tokens['id_token']#????????
+            access_token = new_tokens['access_token'] 
+            id_cookie = f'id_token={id_token}; HttpOnly; Secure; Path=/; SameSite=None'
+            access_cookie = f'access_token={access_token}; HttpOnly; Secure; Path=/; SameSite=None'
+            # check useage limit in DynamoDB:
+            region_name = "eu-west-1"
+            table_name = "???????"
+            dynamodb = boto3.resource("dynamodb", region_name=region_name)
+            table = dynamodb.Table(table_name)
+            response = table.get_item(
+                Key={
+                    'id': username
+                }
+            )
+            item = response.get('Item')
+            if not item:
+                table.put_item(
+                    Item={
+                        'id': username,
+                        'usage': 1 
+                    }
+                )
+            elif item['usage'] < gpt_limit_per_user_per_day:
+                old_usage = item['usage']
+                table.update_item(
+                        Key={
+                            "id": username,
+                        },
+                        UpdateExpression="SET usage = :usage",
+                        ExpressionAttributeValues={":usage": old_usage + 1},
+                    )
+            else:
+                return {
+                    'statusCode': 429,
+                    'cookies': [id_cookie, access_cookie,],
+                    'body': json.dumps('You have exceeded your usage limit')
+                }             
+            
+            # now we can go to chatGPT:
+            prompt = body['prompt']
+            for j in range(3):
+                try:
+                    response_text = chat_with_gpt(prompt)
+                    break
+                except Exception as e:
+                    print(e)
+                    if j == 2:
+                        response_text = 'Sorry, some error occured, please write again'
+                    time.sleep(1)
+            return {
+                'statusCode': 200,
+                'cookies': [id_cookie, access_cookie],
+                'body': json.dumps(response_text)
+            }
+            
+        except Exception as e:
+            logger.error('Error refreshing token or deleting user: %s', e, exc_info=True)
+            return clear_tokens_response_401('Session expired, please log in again. Account was not deleted.')
+
+    except Exception as e:
+        logger.error('An error occurred: %s', e, exc_info=True)
+        return {'statusCode': 500, 'body': json.dumps('An internal error occurred')}
+
 
 def handle_reset_password_code_phase(body):
     email = body['email']

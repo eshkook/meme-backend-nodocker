@@ -17,6 +17,6 @@ def lookup_item(id):
     return item
 
 # Example Usage:
-id = '3'
+id = '2223'
 item = lookup_item(id)
 print(item)
