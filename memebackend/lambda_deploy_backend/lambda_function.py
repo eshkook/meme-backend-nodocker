@@ -22,7 +22,6 @@ import time
 openai.api_key = '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' 
 
 gpt_limit_per_user_per_day = 3
-gpt_limit_per_IP_per_day = 3
 
 # Configure logging
 logger = logging.getLogger()
@@ -99,7 +98,7 @@ def handle_gpt(event):
         username = user_info['Username']
         # check useage limit in DynamoDB:
         region_name = "eu-west-1"
-        table_name = "???????"
+        table_name = "gpt_users_table" # gpt_ip_table
         dynamodb = boto3.resource("dynamodb", region_name=region_name)
         table = dynamodb.Table(table_name)
         response = table.get_item(
@@ -159,7 +158,7 @@ def handle_gpt(event):
             access_cookie = f'access_token={access_token}; HttpOnly; Secure; Path=/; SameSite=None'
             # check useage limit in DynamoDB:
             region_name = "eu-west-1"
-            table_name = "???????"
+            table_name = "gpt_users_table"
             dynamodb = boto3.resource("dynamodb", region_name=region_name)
             table = dynamodb.Table(table_name)
             response = table.get_item(
@@ -216,7 +215,6 @@ def handle_gpt(event):
         logger.error('An error occurred: %s', e, exc_info=True)
         return {'statusCode': 500, 'body': json.dumps('An internal error occurred')}
 
-
 def handle_reset_password_code_phase(body):
     email = body['email']
     confirmation_code = body['confirmation_code']
@@ -270,23 +268,45 @@ def handle_reset_password_email_phase(body):
 def handle_signup(body):
     email = body['email']
     password = body['password']
+    first_name = body['first_name']
+    last_name = body['last_name']
 
     client = boto3.client('cognito-idp')
     # user_pool_id = 'eu-west-1_BZy97DfFY'
     client_id = '6be5bmss0rg7krjk5rd6dt28uc'
 
     try:
+        # response = client.sign_up(
+        #     ClientId=client_id,
+        #     Username=email,
+        #     Password=password,
+        #     UserAttributes=[
+        #         {
+        #             'Name': 'email',
+        #             'Value': email
+        #         },
+        #     ]
+        # )
         response = client.sign_up(
-            ClientId=client_id,
-            Username=email,
-            Password=password,
-            UserAttributes=[
-                {
-                    'Name': 'email',
-                    'Value': email
-                },
-            ]
-        )
+        ClientId=client_id,
+        Username=email,
+        Password=password,
+        UserAttributes=[
+            {
+                'Name': 'email',
+                'Value': email
+            },
+            {
+                'Name': 'given_name',
+                'Value': first_name  # Replace with your variable for the first name
+            },
+            {
+                'Name': 'family_name',
+                'Value': last_name  # Replace with your variable for the last name
+            }
+        ]
+    )
+
         return {'statusCode': 200,
                 'body': json.dumps('User registration successful.')}
     
