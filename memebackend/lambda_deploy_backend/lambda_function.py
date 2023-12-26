@@ -157,7 +157,7 @@ def handle_gpt(event):
             access_token = new_tokens['AccessToken'] 
             id_cookie = f'id_token={id_token}; HttpOnly; Secure; Path=/; SameSite=None'
             access_cookie = f'access_token={access_token}; HttpOnly; Secure; Path=/; SameSite=None'
-            
+
             # check useage limit in DynamoDB:
             region_name = "eu-west-1"
             table_name = "gpt_users_table"
@@ -382,10 +382,12 @@ def handle_authenticate(event):
     
     try:
         user_info = client.get_user(AccessToken=access_token)
-
+        first_name = next((attr['Value'] for attr in user_info['UserAttributes'] if attr['Name'] == 'given_name'), None)
+        
         return {
             'statusCode': 200,
-            'body': json.dumps('Account Authentication Successful')
+            'body': json.dumps({'message': 'Account Authentication Successful', 
+                                'firstName': first_name})
         }
 
     except client.exceptions.NotAuthorizedException as e:
