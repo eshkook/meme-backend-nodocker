@@ -67,7 +67,7 @@ def chat_with_gpt(input):
     '''
     messages = [
         {"role": "system", "content": instructions},
-        {"role": "user", "content": input},
+        {"role": "user", "content": input[:200]}, # limit the input length
     ]
     response = openai.ChatCompletion.create(
         model='gpt-3.5-turbo',
