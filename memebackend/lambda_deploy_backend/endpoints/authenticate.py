@@ -42,6 +42,9 @@ def authenticate_handler(event):
             new_tokens = refresh_access_token(client, refresh_token)
             id_token = new_tokens['IdToken']
             access_token = new_tokens['AccessToken']
+            
+            updated_user_info = client.get_user(AccessToken=access_token)
+            first_name = next((attr['Value'] for attr in updated_user_info['UserAttributes'] if attr['Name'] == 'given_name'), None)
 
             id_cookie = f'id_token={id_token}; HttpOnly; Secure; Path=/; SameSite=None'
             access_cookie = f'access_token={access_token}; HttpOnly; Secure; Path=/; SameSite=None'
@@ -49,7 +52,9 @@ def authenticate_handler(event):
             return {
                 'statusCode': 200,
                 'cookies': [id_cookie, access_cookie],
-                'body': json.dumps('Account Authentication Successful - Token Refreshed')
+                # 'body': json.dumps('Account Authentication Successful - Token Refreshed'),
+                'body': json.dumps({'message': 'Account Authentication Successful - Token Refreshed', 
+                                    'firstName': first_name})
             }
             
         except Exception as e:
