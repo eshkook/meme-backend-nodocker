@@ -1,15 +1,13 @@
 from botocore.exceptions import ClientError
 import boto3
 import json
-from boto3.dynamodb.conditions import Attr
-from timeout_decorator import timeout
 import logging
 
 # Configure logging
 logger = logging.getLogger()
 logger.setLevel(logging.ERROR)  # You can set this to DEBUG, INFO, WARNING, ERROR
 
-def handle_login(body):
+def login_handler(body):
     email = body['email']
     password = body['password']
 
